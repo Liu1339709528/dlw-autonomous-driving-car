@@ -1,0 +1,602 @@
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"pid.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.pid_init,"ax",%progbits
+  19              		.align	1
+  20              		.p2align 4,,15
+  21              		.global	pid_init
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	pid_init:
+  27              	.LFB482:
+  28              		.file 1 "user_code/pid.c"
+   1:user_code/pid.c **** /*
+   2:user_code/pid.c ****  * pid.c
+   3:user_code/pid.c ****  *
+   4:user_code/pid.c ****  *  Created on: 2025年6月18日
+   5:user_code/pid.c ****  *      Author: 刘珈琪
+   6:user_code/pid.c ****  */
+   7:user_code/pid.c **** 
+   8:user_code/pid.c **** 
+   9:user_code/pid.c **** #include "pid.h"
+  10:user_code/pid.c **** 
+  11:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  12:user_code/pid.c **** // 函数简介     PID初始化
+  13:user_code/pid.c **** // 参数说明     *pid                PID结构体
+  14:user_code/pid.c **** // 返回参数     void
+  15:user_code/pid.c **** // 使用示例
+  16:user_code/pid.c **** // 备注信息
+  17:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  18:user_code/pid.c **** void pid_init(pid_controller *pid)
+  19:user_code/pid.c **** {
+  29              		.loc 1 19 1
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 8
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33 0000 00B5     		push	{lr}
+  34              		.cfi_def_cfa_offset 4
+  35              		.cfi_offset 14, -4
+  36 0002 83B0     		sub	sp, sp, #12
+  37              		.cfi_def_cfa_offset 16
+  38 0004 0190     		str	r0, [sp, #4]
+  20:user_code/pid.c ****     pid->Kp = 3.0f;             // 设置PID控制器的比例系数为2.0（单精度浮点数）
+  39              		.loc 1 20 13
+  40 0006 019B     		ldr	r3, [sp, #4]
+  41 0008 094A     		ldr	r2, .L2
+  42 000a 1A60     		str	r2, [r3]	@ float
+  21:user_code/pid.c ****     pid->Ki = 0.01f;            // 设置PID控制器的积分系数为0.01（单精度浮点数）
+  43              		.loc 1 21 13
+  44 000c 019B     		ldr	r3, [sp, #4]
+  45 000e 094A     		ldr	r2, .L2+4
+  46 0010 5A60     		str	r2, [r3, #4]	@ float
+  22:user_code/pid.c ****     pid->Kd = 3.0f;             // 设置PID控制器的微分系数为0.5（单精度浮点数）�
+  47              		.loc 1 22 13
+  48 0012 019B     		ldr	r3, [sp, #4]
+  49 0014 064A     		ldr	r2, .L2
+  50 0016 9A60     		str	r2, [r3, #8]	@ float
+  23:user_code/pid.c ****     pid->setpoint = 0.0f;       // 设置PID控制器的目标设定值为0.0（单精度浮点数�
+  51              		.loc 1 23 19
+  52 0018 019B     		ldr	r3, [sp, #4]
+  53 001a 4FF00002 		mov	r2, #0
+  54 001e DA60     		str	r2, [r3, #12]	@ float
+  24:user_code/pid.c ****     pid_reset(pid);             // 调用复位函数对PID控制器内部状态进行清零，为�
+  55              		.loc 1 24 5
+  56 0020 0198     		ldr	r0, [sp, #4]
+  57 0022 FFF7FEFF 		bl	pid_reset
+  25:user_code/pid.c **** }
+  58              		.loc 1 25 1
+  59 0026 00BF     		nop
+  60 0028 03B0     		add	sp, sp, #12
+  61              		.cfi_def_cfa_offset 4
+  62              		@ sp needed
+  63 002a 5DF804FB 		ldr	pc, [sp], #4
+  64              	.L3:
+  65 002e 00BF     		.align	2
+  66              	.L2:
+  67 0030 00004040 		.word	1077936128
+  68 0034 0AD7233C 		.word	1008981770
+  69              		.cfi_endproc
+  70              	.LFE482:
+  72              		.section	.text.pid_set_limits,"ax",%progbits
+  73              		.align	1
+  74              		.p2align 4,,15
+  75              		.global	pid_set_limits
+  76              		.syntax unified
+  77              		.thumb
+  78              		.thumb_func
+  80              	pid_set_limits:
+  81              	.LFB483:
+  26:user_code/pid.c **** 
+  27:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  28:user_code/pid.c **** // 函数简介     PID设置输出限制
+  29:user_code/pid.c **** // 参数说明     *pid                PID结构体
+  30:user_code/pid.c **** // 参数说明     min                 设置输出最小值
+  31:user_code/pid.c **** // 参数说明     max                 设置输出最大值
+  32:user_code/pid.c **** // 返回参数     void
+  33:user_code/pid.c **** // 使用示例
+  34:user_code/pid.c **** // 备注信息
+  35:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  36:user_code/pid.c **** void pid_set_limits(pid_controller *pid, float min, float max)
+  37:user_code/pid.c **** {
+  82              		.loc 1 37 1
+  83              		.cfi_startproc
+  84              		@ args = 0, pretend = 0, frame = 16
+  85              		@ frame_needed = 0, uses_anonymous_args = 0
+  86              		@ link register save eliminated.
+  87 0000 84B0     		sub	sp, sp, #16
+  88              		.cfi_def_cfa_offset 16
+  89 0002 0390     		str	r0, [sp, #12]
+  90 0004 8DED020A 		vstr.32	s0, [sp, #8]
+  91 0008 CDED010A 		vstr.32	s1, [sp, #4]
+  38:user_code/pid.c ****     pid->out_min = min;
+  92              		.loc 1 38 18
+  93 000c 039B     		ldr	r3, [sp, #12]
+  94 000e 029A     		ldr	r2, [sp, #8]	@ float
+  95 0010 DA61     		str	r2, [r3, #28]	@ float
+  39:user_code/pid.c ****     pid->out_max = max;
+  96              		.loc 1 39 18
+  97 0012 039B     		ldr	r3, [sp, #12]
+  98 0014 019A     		ldr	r2, [sp, #4]	@ float
+  99 0016 1A62     		str	r2, [r3, #32]	@ float
+  40:user_code/pid.c **** }
+ 100              		.loc 1 40 1
+ 101 0018 00BF     		nop
+ 102 001a 04B0     		add	sp, sp, #16
+ 103              		.cfi_def_cfa_offset 0
+ 104              		@ sp needed
+ 105 001c 7047     		bx	lr
+ 106              		.cfi_endproc
+ 107              	.LFE483:
+ 109 001e 00BF     		.section	.text.pid_compute,"ax",%progbits
+ 110              		.align	1
+ 111              		.p2align 4,,15
+ 112              		.global	pid_compute
+ 113              		.syntax unified
+ 114              		.thumb
+ 115              		.thumb_func
+ 117              	pid_compute:
+ 118              	.LFB484:
+  41:user_code/pid.c **** 
+  42:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  43:user_code/pid.c **** // 函数简介     计算PID输出
+  44:user_code/pid.c **** // 参数说明     *pid                PID控制器
+  45:user_code/pid.c **** // 参数说明     input               设置输出
+  46:user_code/pid.c **** // 返回参数     float
+  47:user_code/pid.c **** // 使用示例     pid_output = pid_compute(&heading_pid, current_angles.yaw);
+  48:user_code/pid.c **** // 备注信息     此示例可以输出通过PID调节后的IMU航向角数据
+  49:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  50:user_code/pid.c **** float pid_compute(pid_controller *pid, float input)
+  51:user_code/pid.c **** {
+ 119              		.loc 1 51 1
+ 120              		.cfi_startproc
+ 121              		@ args = 0, pretend = 0, frame = 32
+ 122              		@ frame_needed = 0, uses_anonymous_args = 0
+ 123              		@ link register save eliminated.
+ 124 0000 88B0     		sub	sp, sp, #32
+ 125              		.cfi_def_cfa_offset 32
+ 126 0002 0190     		str	r0, [sp, #4]
+ 127 0004 8DED000A 		vstr.32	s0, [sp]
+  52:user_code/pid.c ****     // 计算原始误差
+  53:user_code/pid.c ****     float raw_error = pid->setpoint - input;
+ 128              		.loc 1 53 26
+ 129 0008 019B     		ldr	r3, [sp, #4]
+ 130 000a 93ED037A 		vldr.32	s14, [r3, #12]
+ 131              		.loc 1 53 11
+ 132 000e DDED007A 		vldr.32	s15, [sp]
+ 133 0012 77EE677A 		vsub.f32	s15, s14, s15
+ 134 0016 CDED067A 		vstr.32	s15, [sp, #24]
+  54:user_code/pid.c **** 
+  55:user_code/pid.c ****     // 处理角度环绕问题
+  56:user_code/pid.c ****     float error = raw_error;
+ 135              		.loc 1 56 11
+ 136 001a 069B     		ldr	r3, [sp, #24]	@ float
+ 137 001c 0793     		str	r3, [sp, #28]	@ float
+  57:user_code/pid.c ****     if (error > 180.0f) {
+ 138              		.loc 1 57 8
+ 139 001e DDED077A 		vldr.32	s15, [sp, #28]
+ 140 0022 9FED5C7A 		vldr.32	s14, .L27
+ 141 0026 F4EEC77A 		vcmpe.f32	s15, s14
+ 142 002a F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 143 002e 08DD     		ble	.L25
+  58:user_code/pid.c ****         error -= 360.0f;
+ 144              		.loc 1 58 15
+ 145 0030 DDED077A 		vldr.32	s15, [sp, #28]
+ 146 0034 9FED587A 		vldr.32	s14, .L27+4
+ 147 0038 77EEC77A 		vsub.f32	s15, s15, s14
+ 148 003c CDED077A 		vstr.32	s15, [sp, #28]
+ 149 0040 10E0     		b	.L8
+ 150              	.L25:
+  59:user_code/pid.c ****     } else if (error < -180.0f) {
+ 151              		.loc 1 59 15
+ 152 0042 DDED077A 		vldr.32	s15, [sp, #28]
+ 153 0046 9FED557A 		vldr.32	s14, .L27+8
+ 154 004a F4EEC77A 		vcmpe.f32	s15, s14
+ 155 004e F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 156 0052 07D5     		bpl	.L8
+  60:user_code/pid.c ****         error += 360.0f;
+ 157              		.loc 1 60 15
+ 158 0054 DDED077A 		vldr.32	s15, [sp, #28]
+ 159 0058 9FED4F7A 		vldr.32	s14, .L27+4
+ 160 005c 77EE877A 		vadd.f32	s15, s15, s14
+ 161 0060 CDED077A 		vstr.32	s15, [sp, #28]
+ 162              	.L8:
+  61:user_code/pid.c ****     }
+  62:user_code/pid.c **** 
+  63:user_code/pid.c ****     // 比例项
+  64:user_code/pid.c ****     float proportional = pid->Kp * error;
+ 163              		.loc 1 64 29
+ 164 0064 019B     		ldr	r3, [sp, #4]
+ 165 0066 D3ED007A 		vldr.32	s15, [r3]
+ 166              		.loc 1 64 11
+ 167 006a 9DED077A 		vldr.32	s14, [sp, #28]
+ 168 006e 67EE277A 		vmul.f32	s15, s14, s15
+ 169 0072 CDED057A 		vstr.32	s15, [sp, #20]
+  65:user_code/pid.c **** 
+  66:user_code/pid.c ****     // 积分项（抗饱和处理）
+  67:user_code/pid.c ****     pid->integral += error;
+ 170              		.loc 1 67 19
+ 171 0076 019B     		ldr	r3, [sp, #4]
+ 172 0078 93ED047A 		vldr.32	s14, [r3, #16]
+ 173 007c DDED077A 		vldr.32	s15, [sp, #28]
+ 174 0080 77EE277A 		vadd.f32	s15, s14, s15
+ 175 0084 019B     		ldr	r3, [sp, #4]
+ 176 0086 C3ED047A 		vstr.32	s15, [r3, #16]
+  68:user_code/pid.c ****     if (pid->integral * pid->Ki > pid->out_max)
+ 177              		.loc 1 68 12
+ 178 008a 019B     		ldr	r3, [sp, #4]
+ 179 008c 93ED047A 		vldr.32	s14, [r3, #16]
+ 180              		.loc 1 68 28
+ 181 0090 019B     		ldr	r3, [sp, #4]
+ 182 0092 D3ED017A 		vldr.32	s15, [r3, #4]
+ 183              		.loc 1 68 23
+ 184 0096 27EE277A 		vmul.f32	s14, s14, s15
+ 185              		.loc 1 68 38
+ 186 009a 019B     		ldr	r3, [sp, #4]
+ 187 009c D3ED087A 		vldr.32	s15, [r3, #32]
+ 188              		.loc 1 68 8
+ 189 00a0 B4EEE77A 		vcmpe.f32	s14, s15
+ 190 00a4 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 191 00a8 0BDD     		ble	.L26
+  69:user_code/pid.c ****     {
+  70:user_code/pid.c ****         pid->integral = pid->out_max / pid->Ki;
+ 192              		.loc 1 70 28
+ 193 00aa 019B     		ldr	r3, [sp, #4]
+ 194 00ac D3ED086A 		vldr.32	s13, [r3, #32]
+ 195              		.loc 1 70 43
+ 196 00b0 019B     		ldr	r3, [sp, #4]
+ 197 00b2 93ED017A 		vldr.32	s14, [r3, #4]
+ 198              		.loc 1 70 38
+ 199 00b6 C6EE877A 		vdiv.f32	s15, s13, s14
+ 200              		.loc 1 70 23
+ 201 00ba 019B     		ldr	r3, [sp, #4]
+ 202 00bc C3ED047A 		vstr.32	s15, [r3, #16]
+ 203 00c0 1AE0     		b	.L12
+ 204              	.L26:
+  71:user_code/pid.c ****     }
+  72:user_code/pid.c ****     else if (pid->integral * pid->Ki < pid->out_min)
+ 205              		.loc 1 72 17
+ 206 00c2 019B     		ldr	r3, [sp, #4]
+ 207 00c4 93ED047A 		vldr.32	s14, [r3, #16]
+ 208              		.loc 1 72 33
+ 209 00c8 019B     		ldr	r3, [sp, #4]
+ 210 00ca D3ED017A 		vldr.32	s15, [r3, #4]
+ 211              		.loc 1 72 28
+ 212 00ce 27EE277A 		vmul.f32	s14, s14, s15
+ 213              		.loc 1 72 43
+ 214 00d2 019B     		ldr	r3, [sp, #4]
+ 215 00d4 D3ED077A 		vldr.32	s15, [r3, #28]
+ 216              		.loc 1 72 13
+ 217 00d8 B4EEE77A 		vcmpe.f32	s14, s15
+ 218 00dc F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 219 00e0 0AD5     		bpl	.L12
+  73:user_code/pid.c ****     {
+  74:user_code/pid.c ****         pid->integral = pid->out_min / pid->Ki;
+ 220              		.loc 1 74 28
+ 221 00e2 019B     		ldr	r3, [sp, #4]
+ 222 00e4 D3ED076A 		vldr.32	s13, [r3, #28]
+ 223              		.loc 1 74 43
+ 224 00e8 019B     		ldr	r3, [sp, #4]
+ 225 00ea 93ED017A 		vldr.32	s14, [r3, #4]
+ 226              		.loc 1 74 38
+ 227 00ee C6EE877A 		vdiv.f32	s15, s13, s14
+ 228              		.loc 1 74 23
+ 229 00f2 019B     		ldr	r3, [sp, #4]
+ 230 00f4 C3ED047A 		vstr.32	s15, [r3, #16]
+ 231              	.L12:
+  75:user_code/pid.c ****     }
+  76:user_code/pid.c ****     float integral = pid->Ki * pid->integral;
+ 232              		.loc 1 76 25
+ 233 00f8 019B     		ldr	r3, [sp, #4]
+ 234 00fa 93ED017A 		vldr.32	s14, [r3, #4]
+ 235              		.loc 1 76 35
+ 236 00fe 019B     		ldr	r3, [sp, #4]
+ 237 0100 D3ED047A 		vldr.32	s15, [r3, #16]
+ 238              		.loc 1 76 11
+ 239 0104 67EE277A 		vmul.f32	s15, s14, s15
+ 240 0108 CDED047A 		vstr.32	s15, [sp, #16]
+  77:user_code/pid.c **** 
+  78:user_code/pid.c ****     // 微分项（使用处理后的误差）
+  79:user_code/pid.c ****     float derivative = pid->Kd * (error - pid->prev_error);
+ 241              		.loc 1 79 27
+ 242 010c 019B     		ldr	r3, [sp, #4]
+ 243 010e 93ED027A 		vldr.32	s14, [r3, #8]
+ 244              		.loc 1 79 46
+ 245 0112 019B     		ldr	r3, [sp, #4]
+ 246 0114 D3ED057A 		vldr.32	s15, [r3, #20]
+ 247              		.loc 1 79 41
+ 248 0118 DDED076A 		vldr.32	s13, [sp, #28]
+ 249 011c 76EEE77A 		vsub.f32	s15, s13, s15
+ 250              		.loc 1 79 11
+ 251 0120 67EE277A 		vmul.f32	s15, s14, s15
+ 252 0124 CDED037A 		vstr.32	s15, [sp, #12]
+  80:user_code/pid.c ****     pid->prev_error = error;
+ 253              		.loc 1 80 21
+ 254 0128 019B     		ldr	r3, [sp, #4]
+ 255 012a 079A     		ldr	r2, [sp, #28]	@ float
+ 256 012c 5A61     		str	r2, [r3, #20]	@ float
+  81:user_code/pid.c **** 
+  82:user_code/pid.c ****     // 计算总输出
+  83:user_code/pid.c ****     pid->output = proportional + integral + derivative;
+ 257              		.loc 1 83 32
+ 258 012e 9DED057A 		vldr.32	s14, [sp, #20]
+ 259 0132 DDED047A 		vldr.32	s15, [sp, #16]
+ 260 0136 37EE277A 		vadd.f32	s14, s14, s15
+ 261              		.loc 1 83 43
+ 262 013a DDED037A 		vldr.32	s15, [sp, #12]
+ 263 013e 77EE277A 		vadd.f32	s15, s14, s15
+ 264              		.loc 1 83 17
+ 265 0142 019B     		ldr	r3, [sp, #4]
+ 266 0144 C3ED067A 		vstr.32	s15, [r3, #24]
+  84:user_code/pid.c **** 
+  85:user_code/pid.c ****     // 限制输出范围
+  86:user_code/pid.c ****     if (pid->output > pid->out_max) pid->output = pid->out_max;
+ 267              		.loc 1 86 12
+ 268 0148 019B     		ldr	r3, [sp, #4]
+ 269 014a 93ED067A 		vldr.32	s14, [r3, #24]
+ 270              		.loc 1 86 26
+ 271 014e 019B     		ldr	r3, [sp, #4]
+ 272 0150 D3ED087A 		vldr.32	s15, [r3, #32]
+ 273              		.loc 1 86 8
+ 274 0154 B4EEE77A 		vcmpe.f32	s14, s15
+ 275 0158 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 276 015c 03DD     		ble	.L14
+ 277              		.loc 1 86 54 discriminator 1
+ 278 015e 019B     		ldr	r3, [sp, #4]
+ 279 0160 1A6A     		ldr	r2, [r3, #32]	@ float
+ 280              		.loc 1 86 49 discriminator 1
+ 281 0162 019B     		ldr	r3, [sp, #4]
+ 282 0164 9A61     		str	r2, [r3, #24]	@ float
+ 283              	.L14:
+  87:user_code/pid.c ****     if (pid->output < pid->out_min) pid->output = pid->out_min;
+ 284              		.loc 1 87 12
+ 285 0166 019B     		ldr	r3, [sp, #4]
+ 286 0168 93ED067A 		vldr.32	s14, [r3, #24]
+ 287              		.loc 1 87 26
+ 288 016c 019B     		ldr	r3, [sp, #4]
+ 289 016e D3ED077A 		vldr.32	s15, [r3, #28]
+ 290              		.loc 1 87 8
+ 291 0172 B4EEE77A 		vcmpe.f32	s14, s15
+ 292 0176 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 293 017a 03D5     		bpl	.L16
+ 294              		.loc 1 87 54 discriminator 1
+ 295 017c 019B     		ldr	r3, [sp, #4]
+ 296 017e DA69     		ldr	r2, [r3, #28]	@ float
+ 297              		.loc 1 87 49 discriminator 1
+ 298 0180 019B     		ldr	r3, [sp, #4]
+ 299 0182 9A61     		str	r2, [r3, #24]	@ float
+ 300              	.L16:
+  88:user_code/pid.c **** 
+  89:user_code/pid.c ****     return pid->output;
+ 301              		.loc 1 89 15
+ 302 0184 019B     		ldr	r3, [sp, #4]
+ 303 0186 9B69     		ldr	r3, [r3, #24]	@ float
+ 304 0188 07EE903A 		vmov	s15, r3
+  90:user_code/pid.c **** }
+ 305              		.loc 1 90 1
+ 306 018c B0EE670A 		vmov.f32	s0, s15
+ 307 0190 08B0     		add	sp, sp, #32
+ 308              		.cfi_def_cfa_offset 0
+ 309              		@ sp needed
+ 310 0192 7047     		bx	lr
+ 311              	.L28:
+ 312              		.align	2
+ 313              	.L27:
+ 314 0194 00003443 		.word	1127481344
+ 315 0198 0000B443 		.word	1135869952
+ 316 019c 000034C3 		.word	-1020002304
+ 317              		.cfi_endproc
+ 318              	.LFE484:
+ 320              		.section	.text.pid_reset,"ax",%progbits
+ 321              		.align	1
+ 322              		.p2align 4,,15
+ 323              		.global	pid_reset
+ 324              		.syntax unified
+ 325              		.thumb
+ 326              		.thumb_func
+ 328              	pid_reset:
+ 329              	.LFB485:
+  91:user_code/pid.c **** 
+  92:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  93:user_code/pid.c **** // 函数简介     重置PID控制器
+  94:user_code/pid.c **** // 参数说明     *pid                PID控制器
+  95:user_code/pid.c **** // 返回参数     void
+  96:user_code/pid.c **** // 使用示例
+  97:user_code/pid.c **** // 备注信息
+  98:user_code/pid.c **** //-------------------------------------------------------------------------------------------------
+  99:user_code/pid.c **** void pid_reset(pid_controller *pid)
+ 100:user_code/pid.c **** {
+ 330              		.loc 1 100 1
+ 331              		.cfi_startproc
+ 332              		@ args = 0, pretend = 0, frame = 8
+ 333              		@ frame_needed = 0, uses_anonymous_args = 0
+ 334              		@ link register save eliminated.
+ 335 0000 82B0     		sub	sp, sp, #8
+ 336              		.cfi_def_cfa_offset 8
+ 337 0002 0190     		str	r0, [sp, #4]
+ 101:user_code/pid.c ****     pid->integral = 0.0f;
+ 338              		.loc 1 101 19
+ 339 0004 019B     		ldr	r3, [sp, #4]
+ 340 0006 4FF00002 		mov	r2, #0
+ 341 000a 1A61     		str	r2, [r3, #16]	@ float
+ 102:user_code/pid.c ****     pid->prev_error = 0.0f;
+ 342              		.loc 1 102 21
+ 343 000c 019B     		ldr	r3, [sp, #4]
+ 344 000e 4FF00002 		mov	r2, #0
+ 345 0012 5A61     		str	r2, [r3, #20]	@ float
+ 103:user_code/pid.c ****     pid->output = 0.0f;
+ 346              		.loc 1 103 17
+ 347 0014 019B     		ldr	r3, [sp, #4]
+ 348 0016 4FF00002 		mov	r2, #0
+ 349 001a 9A61     		str	r2, [r3, #24]	@ float
+ 104:user_code/pid.c **** }
+ 350              		.loc 1 104 1
+ 351 001c 00BF     		nop
+ 352 001e 02B0     		add	sp, sp, #8
+ 353              		.cfi_def_cfa_offset 0
+ 354              		@ sp needed
+ 355 0020 7047     		bx	lr
+ 356              		.cfi_endproc
+ 357              	.LFE485:
+ 359 0022 00BF     		.text
+ 360              	.Letext0:
+ 361              		.file 2 "user_code/pid.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 pid.c
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:19     .text.pid_init:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:26     .text.pid_init:00000000 pid_init
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:328    .text.pid_reset:00000000 pid_reset
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:67     .text.pid_init:00000030 $d
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:73     .text.pid_set_limits:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:80     .text.pid_set_limits:00000000 pid_set_limits
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:110    .text.pid_compute:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:117    .text.pid_compute:00000000 pid_compute
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:314    .text.pid_compute:00000194 $d
+C:\Users\86155\AppData\Local\Temp\cc6Inqbg.s:321    .text.pid_reset:00000000 $t
+                           .group:00000000 wm4.0.1ea29c7543256e0887205fa7f8c557c8
+                           .group:00000000 wm4._newlib_version.h.4.bfdf54b0af045d4a71376ae00f63a22c
+                           .group:00000000 wm4.newlib.h.18.1c9fedb6b3cd797cff253cc0fd593ef2
+                           .group:00000000 wm4.ieeefp.h.77.2bc94c1d1ed8b02df437510a04ac1e45
+                           .group:00000000 wm4.features.h.22.026edb2397769f4ae13f35900dbdb560
+                           .group:00000000 wm4.config.h.224.c701144a7b0518c6ee9b9b5465b79f81
+                           .group:00000000 wm4._ansi.h.31.de524f58584151836e90d8620a16f8e8
+                           .group:00000000 wm4.stdio.h.31.7c0e28c411445f3f9c5b11accf882760
+                           .group:00000000 wm4._default_types.h.6.959254cf5f09734ea7516c89e8bb21bd
+                           .group:00000000 wm4.stddef.h.181.c3f52a3b0f4c288bddb5dda1562858e2
+                           .group:00000000 wm4.cdefs.h.49.a54b2d5c07711bc7320a3fea9f12cb56
+                           .group:00000000 wm4.stddef.h.39.c161261b198ee3a963897077fd6fa59f
+                           .group:00000000 wm4.stdarg.h.34.3a23a216c0c293b3d2ea2e89281481e6
+                           .group:00000000 wm4._types.h.20.dd0d04dca3800a0d2a6129b87f3adbb2
+                           .group:00000000 wm4.stddef.h.155.3588ebfdd1e8c7ede80509bb9c3b8009
+                           .group:00000000 wm4._types.h.127.34941de1b2539d59d5cac00e0dd27a45
+                           .group:00000000 wm4.reent.h.17.e292bf8b0bec6c96e131a54347145a30
+                           .group:00000000 wm4.lock.h.2.1461d1fff82dffe8bfddc23307f6484f
+                           .group:00000000 wm4.reent.h.77.dcd6129ff07fe81bd5636db29abe53b2
+                           .group:00000000 wm4.types.h.40.8b6acba56cefbb11746718204edc8f5e
+                           .group:00000000 wm4._stdint.h.10.c24fa3af3bc1706662bb5593a907e841
+                           .group:00000000 wm4._endian.h.31.65a10590763c3dde1ac4a7f66d7d4891
+                           .group:00000000 wm4.endian.h.9.49f3a4695c1b61e8a0808de3c4a106cb
+                           .group:00000000 wm4._timeval.h.32.bec3221fa7a9bb0bdde696c9c57e47d2
+                           .group:00000000 wm4.timespec.h.41.d855182eb0e690443ab8651bcedca6e1
+                           .group:00000000 wm4.select.h.19.40cd3f2bfc456b193b790c2754690ebf
+                           .group:00000000 wm4.types.h.51.5571ec98f267d17d3c670b7a3ba33afa
+                           .group:00000000 wm4.sched.h.22.c60982713a5c428609783c78f9c78d95
+                           .group:00000000 wm4._pthreadtypes.h.36.fcee9961c35163dde6267ef772ad1972
+                           .group:00000000 wm4.stdio.h.2.4aa87247282eca6c8f36f9de33d8df1a
+                           .group:00000000 wm4.stdio.h.81.932d0c162786b883f622b8d05c120c78
+                           .group:00000000 wm4._intsup.h.10.48bafbb683905c4daa4565a85aeeb264
+                           .group:00000000 wm4.stdint.h.23.d53047a68f4a85177f80b422d52785ed
+                           .group:00000000 wm4.string.h.8.c4b8571ce60dff2817f43fec8b86aecd
+                           .group:00000000 wm4.stddef.h.155.ba788add86a0e365f264484f110c3c29
+                           .group:00000000 wm4.sr5e1xx.h.22.e5c808533cc52ed19fb0830cd7d98924
+                           .group:00000000 wm4.cmsis_version.h.32.0f826810625204eca22a19868bdc7586
+                           .group:00000000 wm4.core_cm7.h.66.8ab2de36917d6fcae18019067fda13e0
+                           .group:00000000 wm4.cmsis_gcc.h.26.498d0ad17a45fc9ef20fdc01caf02259
+                           .group:00000000 wm4.core_cm7.h.174.43edb295ecdaadad738f48ba6011ffad
+                           .group:00000000 wm4.mpu_armv7.h.32.83326921a797fa9d6f70449916b4b839
+                           .group:00000000 wm4.cachel1_armv7.h.32.abd77761a989e008b0c60891114a33c7
+                           .group:00000000 wm4.SR5E1_ADC.h.14.21608e6aff125ba995dd767d6d8dc311
+                           .group:00000000 wm4.SR5E1_CEM.h.14.01fe5742c8f1ae35b1f3af05932f702e
+                           .group:00000000 wm4.SR5E1_CMU.h.14.2617b38b159abe38028862394531e06d
+                           .group:00000000 wm4.SR5E1_COMP.h.14.4b6fdfe4f5f7fd9bedf3a99b98bdf4cd
+                           .group:00000000 wm4.SR5E1_CORDIC.h.14.354fbf7c9eaf6963d38eaa25cf28ffe8
+                           .group:00000000 wm4.SR5E1_CRC.h.14.c64d0f7767671ddb92e9ead0a1162100
+                           .group:00000000 wm4.SR5E1_DAC.h.14.8c26a0ff04b0cfeb55306cc3f22187b8
+                           .group:00000000 wm4.SR5E1_DBGMCU.h.14.427df893d53a8044654f017ba01c25ed
+                           .group:00000000 wm4.SR5E1_DMA.h.14.a7f9a92f844b40a86965798c2e64240b
+                           .group:00000000 wm4.SR5E1_DMAMUX.h.14.471b3b4dfd4d41515f1df49493698866
+                           .group:00000000 wm4.SR5E1_EXTI.h.14.a325ea3fe89cd84894660551c33241ea
+                           .group:00000000 wm4.SR5E1_FCCU.h.14.0ebf0f0f36e079d28613ad2c80e17e23
+                           .group:00000000 wm4.SR5E1_FDCAN.h.14.ac57101fad5dbc798bfb93f34c899de7
+                           .group:00000000 wm4.SR5E1_FLASH_REG_ITF.h.14.d23d1d44923f9b20b8c8fdb51d66aefd
+                           .group:00000000 wm4.SR5E1_GPIO.h.14.1c84071e130d7c64b62470ab0e18a1f1
+                           .group:00000000 wm4.SR5E1_HRTIM.h.24.03932387d2522e6bd5c772a4edaf2f5d
+                           .group:00000000 wm4.SR5E1_HSEM.h.14.cbe70eee519f01b16452c3f8c99d8df1
+                           .group:00000000 wm4.SR5E1_I2C.h.14.350ba3e0f4fd57828457efa80135c36c
+                           .group:00000000 wm4.SR5E1_IMA.h.14.62b7088985ab2b7ce9b030a02daa1f7d
+                           .group:00000000 wm4.SR5E1_IWDG.h.14.20b7c5f05cf7ae94464c360d7af3660d
+                           .group:00000000 wm4.SR5E1_MEMU.h.14.04bad7ae4c52ce334a4fc900aad2ae5b
+                           .group:00000000 wm4.SR5E1_NVM_CTRL.h.14.5f442617f0628d4f16258f211c614ef9
+                           .group:00000000 wm4.SR5E1_PLLDIG.h.14.bd87a8e6917eee17dae2f312c8e5fa53
+                           .group:00000000 wm4.SR5E1_PMC_DIG.h.14.54173b566c6656344766ec4ef46c9281
+                           .group:00000000 wm4.SR5E1_RCC.h.14.56734803c71534de286e793a53649740
+                           .group:00000000 wm4.SR5E1_RTC.h.14.47037cbc7d8175dbf2be1dc0bb955e3f
+                           .group:00000000 wm4.SR5E1_SD_ADC.h.14.552b97d0b8f3c1fd4df6d8964b2f1a80
+                           .group:00000000 wm4.SR5E1_SMPU.h.14.8ce5bb6d5d7c579cd725f492f46e9085
+                           .group:00000000 wm4.SR5E1_SPI.h.14.42d52112e540f85ade4d9135f8b87d72
+                           .group:00000000 wm4.SR5E1_SSCM.h.14.8e6a2ad0ce5fca422fc3d69939b6125b
+                           .group:00000000 wm4.SR5E1_SYSCFG.h.14.02b969490118ce4069914b5e94f7ca65
+                           .group:00000000 wm4.SR5E1_TDM.h.14.a40ed7928cad243a57fd233fccf01ad2
+                           .group:00000000 wm4.SR5E1_TIM.h.14.f17572f4c16f3f152b8164ad25c34f5b
+                           .group:00000000 wm4.SR5E1_UART.h.14.eec3ab82b02b3bdb3de500483675b83f
+                           .group:00000000 wm4.SR5E1_WWDG.h.14.59b45efc70e442cc6ef03702aad4ad88
+                           .group:00000000 wm4.stdbool.h.29.07dce69c3b78884144b7f7bd19483461
+                           .group:00000000 wm4.typedefs.h.36.07fe3956b4e751037cfee70edcd0b397
+                           .group:00000000 wm4.irq_numbers.h.38.6294b95aed1bf7b3a2cda0eed8ce8f57
+                           .group:00000000 wm4.regs.h.23.2ac145b4f57126d16daed5fbd86d99c6
+                           .group:00000000 wm4.stdarg.h.31.3fa7b8f6daaa31edd1696c08c77f2a73
+                           .group:00000000 wm4.stdlib.h.13.4ed386f5c1a80d71e72172885d946ef2
+                           .group:00000000 wm4.alloca.h.8.dfc0c703c47ec3e69746825b17d9e66d
+                           .group:00000000 wm4.stdlib.h.56.f4862cfbf4363a1db01842d5bdf72c18
+                           .group:00000000 wm4.zf_common_typedef.h.47.8c368673885c9d07221c267e15ab1069
+                           .group:00000000 wm4.zf_common_debug.h.33.ccdd5203a5e510a964ba4c22faca44c8
+                           .group:00000000 wm4.zf_common_fifo.h.33.e14e643902e26e4e65437b5b20e82793
+                           .group:00000000 wm4.zf_common_function.h.33.02bbfb055e8ee322bc4f8b14ea195da2
+                           .group:00000000 wm4.zf_common_memory.h.33.d43647290a4d62164ff2ec77cadb89d8
+                           .group:00000000 wm4.saradc.h.25.e5a70aef9ec4fddf35f2b7cc0c9cf1bc
+                           .group:00000000 wm4.gpio.h.25.d41a0c19fda8c2de42e666afb48ec15a
+                           .group:00000000 wm4.zf_driver_gpio.h.65.5a4d2084c62fed7c22fdca02e748c198
+                           .group:00000000 wm4.zf_driver_adc.h.64.349fb433626b42172b0e0fee038428ca
+                           .group:00000000 wm4.can.h.25.3cfccb6c630ada4f656cab597e231e58
+                           .group:00000000 wm4.dmamux.h.25.337aea179f6dbcc87c52aae26d38f76e
+                           .group:00000000 wm4.clock_cfg.h.24.0aed3cee9ecce947225a304181294191
+                           .group:00000000 wm4.clock.h.37.80236c5607fdd9eb9275e5111a4191c3
+                           .group:00000000 wm4.irq.h.37.78714f25754c8b09d1428599101f6cc7
+                           .group:00000000 wm4.dma.h.40.f77dd217a06ceba13a3cfdd4102a73c1
+                           .group:00000000 wm4.zf_driver_can.h.67.fd10d2fa867eb54a54d4b57027d73a60
+                           .group:00000000 wm4.tim.h.25.6e7ad96569e77a70a68b9b4cc59f54f2
+                           .group:00000000 wm4.zf_driver_timer.h.33.8df253b6990d9861816977209fb11e90
+                           .group:00000000 wm4.zf_driver_encoder.h.57.7e32999f25354fac086ca226b0c630d4
+                           .group:00000000 wm4.exti.h.25.21597c35d9630b0985ce88d2c41f4ea4
+                           .group:00000000 wm4.zf_driver_exti.h.59.1b02b8083e5295ef5baaf83905d59395
+                           .group:00000000 wm4.ssd_types.h.29.b861f4e6d39d333f931bfc05b964cb1c
+                           .group:00000000 wm4.ssd_C55.h.37.dad650468a97d71aff4dd65ca085590f
+                           .group:00000000 wm4.zf_driver_flash.h.59.db93fe574c35ea9e79030063fbb35a13
+                           .group:00000000 wm4.hrtim.h.25.1601aea9d4a0da1de8252dc444355251
+                           .group:00000000 wm4.zf_driver_hrtim.h.64.cd8d2bf3bf1c471ea59d9c61e4a721d7
+                           .group:00000000 wm4.zf_driver_interrupt.h.33.2c3660dcc36cb090bd75b8f180c14f27
+                           .group:00000000 wm4.zf_driver_pit.h.33.834ac720a62e09d5603a9557331e9049
+                           .group:00000000 wm4.zf_driver_pwm.h.33.7d80487064ca712231a453396685a551
+                           .group:00000000 wm4.zf_driver_rcc.h.33.4c228cf40a79e1b974b30d5a9a3a77a7
+                           .group:00000000 wm4.zf_driver_soft_iic.h.33.9067bd298084134f63c61c075f95fa2b
+                           .group:00000000 wm4.zf_driver_soft_spi.h.33.a938287c023905d97cafe56e4be63674
+                           .group:00000000 wm4.zf_driver_spi.h.62.950b1f52ed365034df2907601137b455
+                           .group:00000000 wm4.zf_driver_system.h.33.370922a9681b47d575d2c83d302a180b
+                           .group:00000000 wm4.zf_driver_uart.h.70.ffcf3694337ad0b4066179f1abd5d668
+                           .group:00000000 wm4.zf_device_imu_interface.h.76.450693495da70d0baeb57a35ebd84d55
+                           .group:00000000 wm4.math.h.13.b6595ad277a643a6127e1a4515a98f91
+                           .group:00000000 wm4.quaternion.h.15.d2ef326a4e7ac21d4b5d449e696cdef0
+                           .group:00000000 wm4.zf_device_imu963ra.h.37.e773f164af6f72dd1b0b6c1242bf99b4
+                           .group:00000000 wm4.zf_device_wireless_interface.h.40.da0a07f107014cb0888a26f281971a5b
+                           .group:00000000 wm4.zf_device_display_interface.h.79.d8df25e52245efbd97fd6415c8db0a72
+                           .group:00000000 wm4.zf_device_ips200.h.37.957fc5e8b291701a6f6b47207b045b77
+                           .group:00000000 wm4.zf_device_gnss.h.44.8dd1e4f186f68f2c5e10664ae223ee02
+                           .group:00000000 wm4.zf_device_key.h.45.b12f9096d8cc68f085b8fe9fe5b730db
+                           .group:00000000 wm4.zf_device_uart_receiver.h.43.9ac9496dcaa4780ef86d21fa439379b4
+                           .group:00000000 wm4.servo.h.15.78b21a8d22a24e2a7b7553d655134d65
+
+NO UNDEFINED SYMBOLS

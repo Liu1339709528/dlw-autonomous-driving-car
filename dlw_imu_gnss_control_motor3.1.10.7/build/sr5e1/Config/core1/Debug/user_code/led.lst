@@ -1,0 +1,256 @@
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"led.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.dlw_led_init,"ax",%progbits
+  19              		.align	1
+  20              		.p2align 4,,15
+  21              		.global	dlw_led_init
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	dlw_led_init:
+  27              	.LFB482:
+  28              		.file 1 "user_code/led.c"
+   1:user_code/led.c **** /*
+   2:user_code/led.c ****  * led.c
+   3:user_code/led.c ****  *
+   4:user_code/led.c ****  *  Created on: 2025年6月4日
+   5:user_code/led.c ****  *      Author: 刘珈琪
+   6:user_code/led.c ****  */
+   7:user_code/led.c **** 
+   8:user_code/led.c **** #include "led.h"
+   9:user_code/led.c **** 
+  10:user_code/led.c **** //-------------------------------------------------------------------------------------------------
+  11:user_code/led.c **** // 函数简介     LED灯初始化
+  12:user_code/led.c **** // 返回参数     void
+  13:user_code/led.c **** // 使用示例
+  14:user_code/led.c **** // 备注信息
+  15:user_code/led.c **** //-------------------------------------------------------------------------------------------------
+  16:user_code/led.c **** void dlw_led_init(void)
+  17:user_code/led.c **** {
+  29              		.loc 1 17 1
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33 0000 08B5     		push	{r3, lr}
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  18:user_code/led.c **** 	zf_gpio_init(G15 , GPO_PUSH_PULL, GPIO_HIGH);                 // 绿灯PG15初始化
+  37              		.loc 1 18 2
+  38 0002 0122     		movs	r2, #1
+  39 0004 1021     		movs	r1, #16
+  40 0006 CF20     		movs	r0, #207
+  41 0008 FFF7FEFF 		bl	zf_gpio_init
+  19:user_code/led.c **** 	zf_gpio_init(G14 , GPO_PUSH_PULL, GPIO_HIGH);                 // 红灯PG14初始化
+  42              		.loc 1 19 2
+  43 000c 0122     		movs	r2, #1
+  44 000e 1021     		movs	r1, #16
+  45 0010 CE20     		movs	r0, #206
+  46 0012 FFF7FEFF 		bl	zf_gpio_init
+  20:user_code/led.c **** 	zf_gpio_init(H0 , GPO_PUSH_PULL, GPIO_HIGH);                  // 蓝灯H0初始化
+  47              		.loc 1 20 2
+  48 0016 0122     		movs	r2, #1
+  49 0018 1021     		movs	r1, #16
+  50 001a E020     		movs	r0, #224
+  51 001c FFF7FEFF 		bl	zf_gpio_init
+  21:user_code/led.c **** }
+  52              		.loc 1 21 1
+  53 0020 00BF     		nop
+  54 0022 08BD     		pop	{r3, pc}
+  55              		.cfi_endproc
+  56              	.LFE482:
+  58              		.section	.text.rgb_flicker_handler,"ax",%progbits
+  59              		.align	1
+  60              		.p2align 4,,15
+  61              		.global	rgb_flicker_handler
+  62              		.syntax unified
+  63              		.thumb
+  64              		.thumb_func
+  66              	rgb_flicker_handler:
+  67              	.LFB483:
+  22:user_code/led.c **** 
+  23:user_code/led.c **** //-------------------------------------------------------------------------------------------------
+  24:user_code/led.c **** // 函数简介     周期中断触发回调函数
+  25:user_code/led.c **** // 参数说明     event           事件
+  26:user_code/led.c **** // 参数说明     *ptr            用户传参句柄
+  27:user_code/led.c **** // 返回参数     void            无返回值
+  28:user_code/led.c **** // 使用示例
+  29:user_code/led.c **** // 备注信息
+  30:user_code/led.c **** //-------------------------------------------------------------------------------------------------
+  31:user_code/led.c **** void rgb_flicker_handler(uint32 event, void *ptr)
+  32:user_code/led.c **** {
+  68              		.loc 1 32 1
+  69              		.cfi_startproc
+  70              		@ args = 0, pretend = 0, frame = 8
+  71              		@ frame_needed = 0, uses_anonymous_args = 0
+  72 0000 00B5     		push	{lr}
+  73              		.cfi_def_cfa_offset 4
+  74              		.cfi_offset 14, -4
+  75 0002 83B0     		sub	sp, sp, #12
+  76              		.cfi_def_cfa_offset 16
+  77 0004 0190     		str	r0, [sp, #4]
+  78 0006 0091     		str	r1, [sp]
+  33:user_code/led.c ****     (void)event;
+  34:user_code/led.c ****     (void)ptr;
+  35:user_code/led.c ****     zf_gpio_toggle_level(G15);
+  79              		.loc 1 35 5
+  80 0008 CF20     		movs	r0, #207
+  81 000a FFF7FEFF 		bl	zf_gpio_toggle_level
+  36:user_code/led.c **** }
+  82              		.loc 1 36 1
+  83 000e 00BF     		nop
+  84 0010 03B0     		add	sp, sp, #12
+  85              		.cfi_def_cfa_offset 4
+  86              		@ sp needed
+  87 0012 5DF804FB 		ldr	pc, [sp], #4
+  88              		.cfi_endproc
+  89              	.LFE483:
+  91 0016 00BF     		.text
+  92              	.Letext0:
+  93              		.file 2 "libraries/zf_driver/zf_driver_gpio.h"
+  94              		.file 3 "libraries/zf_common/zf_common_typedef.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 led.c
+C:\Users\86155\AppData\Local\Temp\ccG26E9Y.s:19     .text.dlw_led_init:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccG26E9Y.s:26     .text.dlw_led_init:00000000 dlw_led_init
+C:\Users\86155\AppData\Local\Temp\ccG26E9Y.s:59     .text.rgb_flicker_handler:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccG26E9Y.s:66     .text.rgb_flicker_handler:00000000 rgb_flicker_handler
+                           .group:00000000 wm4.0.1ea29c7543256e0887205fa7f8c557c8
+                           .group:00000000 wm4._newlib_version.h.4.bfdf54b0af045d4a71376ae00f63a22c
+                           .group:00000000 wm4.newlib.h.18.1c9fedb6b3cd797cff253cc0fd593ef2
+                           .group:00000000 wm4.ieeefp.h.77.2bc94c1d1ed8b02df437510a04ac1e45
+                           .group:00000000 wm4.features.h.22.026edb2397769f4ae13f35900dbdb560
+                           .group:00000000 wm4.config.h.224.c701144a7b0518c6ee9b9b5465b79f81
+                           .group:00000000 wm4._ansi.h.31.de524f58584151836e90d8620a16f8e8
+                           .group:00000000 wm4.stdio.h.31.7c0e28c411445f3f9c5b11accf882760
+                           .group:00000000 wm4._default_types.h.6.959254cf5f09734ea7516c89e8bb21bd
+                           .group:00000000 wm4.stddef.h.181.c3f52a3b0f4c288bddb5dda1562858e2
+                           .group:00000000 wm4.cdefs.h.49.a54b2d5c07711bc7320a3fea9f12cb56
+                           .group:00000000 wm4.stddef.h.39.c161261b198ee3a963897077fd6fa59f
+                           .group:00000000 wm4.stdarg.h.34.3a23a216c0c293b3d2ea2e89281481e6
+                           .group:00000000 wm4._types.h.20.dd0d04dca3800a0d2a6129b87f3adbb2
+                           .group:00000000 wm4.stddef.h.155.3588ebfdd1e8c7ede80509bb9c3b8009
+                           .group:00000000 wm4._types.h.127.34941de1b2539d59d5cac00e0dd27a45
+                           .group:00000000 wm4.reent.h.17.e292bf8b0bec6c96e131a54347145a30
+                           .group:00000000 wm4.lock.h.2.1461d1fff82dffe8bfddc23307f6484f
+                           .group:00000000 wm4.reent.h.77.dcd6129ff07fe81bd5636db29abe53b2
+                           .group:00000000 wm4.types.h.40.8b6acba56cefbb11746718204edc8f5e
+                           .group:00000000 wm4._stdint.h.10.c24fa3af3bc1706662bb5593a907e841
+                           .group:00000000 wm4._endian.h.31.65a10590763c3dde1ac4a7f66d7d4891
+                           .group:00000000 wm4.endian.h.9.49f3a4695c1b61e8a0808de3c4a106cb
+                           .group:00000000 wm4._timeval.h.32.bec3221fa7a9bb0bdde696c9c57e47d2
+                           .group:00000000 wm4.timespec.h.41.d855182eb0e690443ab8651bcedca6e1
+                           .group:00000000 wm4.select.h.19.40cd3f2bfc456b193b790c2754690ebf
+                           .group:00000000 wm4.types.h.51.5571ec98f267d17d3c670b7a3ba33afa
+                           .group:00000000 wm4.sched.h.22.c60982713a5c428609783c78f9c78d95
+                           .group:00000000 wm4._pthreadtypes.h.36.fcee9961c35163dde6267ef772ad1972
+                           .group:00000000 wm4.stdio.h.2.4aa87247282eca6c8f36f9de33d8df1a
+                           .group:00000000 wm4.stdio.h.81.932d0c162786b883f622b8d05c120c78
+                           .group:00000000 wm4._intsup.h.10.48bafbb683905c4daa4565a85aeeb264
+                           .group:00000000 wm4.stdint.h.23.d53047a68f4a85177f80b422d52785ed
+                           .group:00000000 wm4.string.h.8.c4b8571ce60dff2817f43fec8b86aecd
+                           .group:00000000 wm4.stddef.h.155.ba788add86a0e365f264484f110c3c29
+                           .group:00000000 wm4.sr5e1xx.h.22.e5c808533cc52ed19fb0830cd7d98924
+                           .group:00000000 wm4.cmsis_version.h.32.0f826810625204eca22a19868bdc7586
+                           .group:00000000 wm4.core_cm7.h.66.8ab2de36917d6fcae18019067fda13e0
+                           .group:00000000 wm4.cmsis_gcc.h.26.498d0ad17a45fc9ef20fdc01caf02259
+                           .group:00000000 wm4.core_cm7.h.174.43edb295ecdaadad738f48ba6011ffad
+                           .group:00000000 wm4.mpu_armv7.h.32.83326921a797fa9d6f70449916b4b839
+                           .group:00000000 wm4.cachel1_armv7.h.32.abd77761a989e008b0c60891114a33c7
+                           .group:00000000 wm4.SR5E1_ADC.h.14.21608e6aff125ba995dd767d6d8dc311
+                           .group:00000000 wm4.SR5E1_CEM.h.14.01fe5742c8f1ae35b1f3af05932f702e
+                           .group:00000000 wm4.SR5E1_CMU.h.14.2617b38b159abe38028862394531e06d
+                           .group:00000000 wm4.SR5E1_COMP.h.14.4b6fdfe4f5f7fd9bedf3a99b98bdf4cd
+                           .group:00000000 wm4.SR5E1_CORDIC.h.14.354fbf7c9eaf6963d38eaa25cf28ffe8
+                           .group:00000000 wm4.SR5E1_CRC.h.14.c64d0f7767671ddb92e9ead0a1162100
+                           .group:00000000 wm4.SR5E1_DAC.h.14.8c26a0ff04b0cfeb55306cc3f22187b8
+                           .group:00000000 wm4.SR5E1_DBGMCU.h.14.427df893d53a8044654f017ba01c25ed
+                           .group:00000000 wm4.SR5E1_DMA.h.14.a7f9a92f844b40a86965798c2e64240b
+                           .group:00000000 wm4.SR5E1_DMAMUX.h.14.471b3b4dfd4d41515f1df49493698866
+                           .group:00000000 wm4.SR5E1_EXTI.h.14.a325ea3fe89cd84894660551c33241ea
+                           .group:00000000 wm4.SR5E1_FCCU.h.14.0ebf0f0f36e079d28613ad2c80e17e23
+                           .group:00000000 wm4.SR5E1_FDCAN.h.14.ac57101fad5dbc798bfb93f34c899de7
+                           .group:00000000 wm4.SR5E1_FLASH_REG_ITF.h.14.d23d1d44923f9b20b8c8fdb51d66aefd
+                           .group:00000000 wm4.SR5E1_GPIO.h.14.1c84071e130d7c64b62470ab0e18a1f1
+                           .group:00000000 wm4.SR5E1_HRTIM.h.24.03932387d2522e6bd5c772a4edaf2f5d
+                           .group:00000000 wm4.SR5E1_HSEM.h.14.cbe70eee519f01b16452c3f8c99d8df1
+                           .group:00000000 wm4.SR5E1_I2C.h.14.350ba3e0f4fd57828457efa80135c36c
+                           .group:00000000 wm4.SR5E1_IMA.h.14.62b7088985ab2b7ce9b030a02daa1f7d
+                           .group:00000000 wm4.SR5E1_IWDG.h.14.20b7c5f05cf7ae94464c360d7af3660d
+                           .group:00000000 wm4.SR5E1_MEMU.h.14.04bad7ae4c52ce334a4fc900aad2ae5b
+                           .group:00000000 wm4.SR5E1_NVM_CTRL.h.14.5f442617f0628d4f16258f211c614ef9
+                           .group:00000000 wm4.SR5E1_PLLDIG.h.14.bd87a8e6917eee17dae2f312c8e5fa53
+                           .group:00000000 wm4.SR5E1_PMC_DIG.h.14.54173b566c6656344766ec4ef46c9281
+                           .group:00000000 wm4.SR5E1_RCC.h.14.56734803c71534de286e793a53649740
+                           .group:00000000 wm4.SR5E1_RTC.h.14.47037cbc7d8175dbf2be1dc0bb955e3f
+                           .group:00000000 wm4.SR5E1_SD_ADC.h.14.552b97d0b8f3c1fd4df6d8964b2f1a80
+                           .group:00000000 wm4.SR5E1_SMPU.h.14.8ce5bb6d5d7c579cd725f492f46e9085
+                           .group:00000000 wm4.SR5E1_SPI.h.14.42d52112e540f85ade4d9135f8b87d72
+                           .group:00000000 wm4.SR5E1_SSCM.h.14.8e6a2ad0ce5fca422fc3d69939b6125b
+                           .group:00000000 wm4.SR5E1_SYSCFG.h.14.02b969490118ce4069914b5e94f7ca65
+                           .group:00000000 wm4.SR5E1_TDM.h.14.a40ed7928cad243a57fd233fccf01ad2
+                           .group:00000000 wm4.SR5E1_TIM.h.14.f17572f4c16f3f152b8164ad25c34f5b
+                           .group:00000000 wm4.SR5E1_UART.h.14.eec3ab82b02b3bdb3de500483675b83f
+                           .group:00000000 wm4.SR5E1_WWDG.h.14.59b45efc70e442cc6ef03702aad4ad88
+                           .group:00000000 wm4.stdbool.h.29.07dce69c3b78884144b7f7bd19483461
+                           .group:00000000 wm4.typedefs.h.36.07fe3956b4e751037cfee70edcd0b397
+                           .group:00000000 wm4.irq_numbers.h.38.6294b95aed1bf7b3a2cda0eed8ce8f57
+                           .group:00000000 wm4.regs.h.23.2ac145b4f57126d16daed5fbd86d99c6
+                           .group:00000000 wm4.stdarg.h.31.3fa7b8f6daaa31edd1696c08c77f2a73
+                           .group:00000000 wm4.stdlib.h.13.4ed386f5c1a80d71e72172885d946ef2
+                           .group:00000000 wm4.alloca.h.8.dfc0c703c47ec3e69746825b17d9e66d
+                           .group:00000000 wm4.stdlib.h.56.f4862cfbf4363a1db01842d5bdf72c18
+                           .group:00000000 wm4.zf_common_typedef.h.47.8c368673885c9d07221c267e15ab1069
+                           .group:00000000 wm4.zf_common_debug.h.33.ccdd5203a5e510a964ba4c22faca44c8
+                           .group:00000000 wm4.zf_common_fifo.h.33.e14e643902e26e4e65437b5b20e82793
+                           .group:00000000 wm4.zf_common_function.h.33.02bbfb055e8ee322bc4f8b14ea195da2
+                           .group:00000000 wm4.zf_common_memory.h.33.d43647290a4d62164ff2ec77cadb89d8
+                           .group:00000000 wm4.saradc.h.25.e5a70aef9ec4fddf35f2b7cc0c9cf1bc
+                           .group:00000000 wm4.gpio.h.25.d41a0c19fda8c2de42e666afb48ec15a
+                           .group:00000000 wm4.zf_driver_gpio.h.65.5a4d2084c62fed7c22fdca02e748c198
+                           .group:00000000 wm4.zf_driver_adc.h.64.349fb433626b42172b0e0fee038428ca
+                           .group:00000000 wm4.can.h.25.3cfccb6c630ada4f656cab597e231e58
+                           .group:00000000 wm4.dmamux.h.25.337aea179f6dbcc87c52aae26d38f76e
+                           .group:00000000 wm4.clock_cfg.h.24.0aed3cee9ecce947225a304181294191
+                           .group:00000000 wm4.clock.h.37.80236c5607fdd9eb9275e5111a4191c3
+                           .group:00000000 wm4.irq.h.37.78714f25754c8b09d1428599101f6cc7
+                           .group:00000000 wm4.dma.h.40.f77dd217a06ceba13a3cfdd4102a73c1
+                           .group:00000000 wm4.zf_driver_can.h.67.fd10d2fa867eb54a54d4b57027d73a60
+                           .group:00000000 wm4.tim.h.25.6e7ad96569e77a70a68b9b4cc59f54f2
+                           .group:00000000 wm4.zf_driver_timer.h.33.8df253b6990d9861816977209fb11e90
+                           .group:00000000 wm4.zf_driver_encoder.h.57.7e32999f25354fac086ca226b0c630d4
+                           .group:00000000 wm4.exti.h.25.21597c35d9630b0985ce88d2c41f4ea4
+                           .group:00000000 wm4.zf_driver_exti.h.59.1b02b8083e5295ef5baaf83905d59395
+                           .group:00000000 wm4.ssd_types.h.29.b861f4e6d39d333f931bfc05b964cb1c
+                           .group:00000000 wm4.ssd_C55.h.37.dad650468a97d71aff4dd65ca085590f
+                           .group:00000000 wm4.zf_driver_flash.h.59.db93fe574c35ea9e79030063fbb35a13
+                           .group:00000000 wm4.hrtim.h.25.1601aea9d4a0da1de8252dc444355251
+                           .group:00000000 wm4.zf_driver_hrtim.h.64.cd8d2bf3bf1c471ea59d9c61e4a721d7
+                           .group:00000000 wm4.zf_driver_interrupt.h.33.2c3660dcc36cb090bd75b8f180c14f27
+                           .group:00000000 wm4.zf_driver_pit.h.33.834ac720a62e09d5603a9557331e9049
+                           .group:00000000 wm4.zf_driver_pwm.h.33.7d80487064ca712231a453396685a551
+                           .group:00000000 wm4.zf_driver_rcc.h.33.4c228cf40a79e1b974b30d5a9a3a77a7
+                           .group:00000000 wm4.zf_driver_soft_iic.h.33.9067bd298084134f63c61c075f95fa2b
+                           .group:00000000 wm4.zf_driver_soft_spi.h.33.a938287c023905d97cafe56e4be63674
+                           .group:00000000 wm4.zf_driver_spi.h.62.950b1f52ed365034df2907601137b455
+                           .group:00000000 wm4.zf_driver_system.h.33.370922a9681b47d575d2c83d302a180b
+                           .group:00000000 wm4.zf_driver_uart.h.70.ffcf3694337ad0b4066179f1abd5d668
+
+UNDEFINED SYMBOLS
+zf_gpio_init
+zf_gpio_toggle_level

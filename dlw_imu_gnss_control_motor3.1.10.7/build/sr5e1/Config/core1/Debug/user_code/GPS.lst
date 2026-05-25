@@ -1,0 +1,1518 @@
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"GPS.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.global	RP_MAX
+  19              		.section	.data.RP_MAX,"aw"
+  20              		.align	2
+  23              	RP_MAX:
+  24 0000 1E000000 		.word	30
+  25              		.global	GL_NUM
+  26              		.section	.bss.GL_NUM,"aw",%nobits
+  27              		.align	2
+  30              	GL_NUM:
+  31 0000 00000000 		.space	4
+  32              		.global	Target_point
+  33              		.section	.bss.Target_point,"aw",%nobits
+  34              		.align	3
+  37              	Target_point:
+  38 0000 00000000 		.space	2400
+  38      00000000 
+  38      00000000 
+  38      00000000 
+  38      00000000 
+  39              		.global	Work_target_array
+  40              		.section	.bss.Work_target_array,"aw",%nobits
+  41              		.align	2
+  44              	Work_target_array:
+  45 0000 00000000 		.space	1200
+  45      00000000 
+  45      00000000 
+  45      00000000 
+  45      00000000 
+  46              		.global	lat
+  47              		.section	.bss.lat,"aw",%nobits
+  48              		.align	3
+  51              	lat:
+  52 0000 00000000 		.space	8
+  52      00000000 
+  53              		.global	lot
+  54              		.section	.bss.lot,"aw",%nobits
+  55              		.align	3
+  58              	lot:
+  59 0000 00000000 		.space	8
+  59      00000000 
+  60              		.global	I_lat
+  61              		.section	.bss.I_lat,"aw",%nobits
+  62              		.align	2
+  65              	I_lat:
+  66 0000 00000000 		.space	4
+  67              		.global	F_lat
+  68              		.section	.bss.F_lat,"aw",%nobits
+  69              		.align	2
+  72              	F_lat:
+  73 0000 00000000 		.space	4
+  74              		.global	I_lot
+  75              		.section	.bss.I_lot,"aw",%nobits
+  76              		.align	2
+  79              	I_lot:
+  80 0000 00000000 		.space	4
+  81              		.global	F_lot
+  82              		.section	.bss.F_lot,"aw",%nobits
+  83              		.align	2
+  86              	F_lot:
+  87 0000 00000000 		.space	4
+  88              		.global	Number
+  89              		.section	.bss.Number,"aw",%nobits
+  90              		.align	2
+  93              	Number:
+  94 0000 00000000 		.space	4
+  95              		.global	GL_IMU_Flag
+  96              		.section	.bss.GL_IMU_Flag,"aw",%nobits
+  97              		.align	2
+ 100              	GL_IMU_Flag:
+ 101 0000 00000000 		.space	4
+ 102              		.global	virtual_north
+ 103              		.section	.bss.virtual_north,"aw",%nobits
+ 104              		.align	2
+ 107              	virtual_north:
+ 108 0000 00000000 		.space	4
+ 109              		.global	initial_imu_heading
+ 110              		.section	.bss.initial_imu_heading,"aw",%nobits
+ 111              		.align	3
+ 114              	initial_imu_heading:
+ 115 0000 00000000 		.space	8
+ 115      00000000 
+ 116              		.section	.rodata
+ 117              		.align	2
+ 118              	.LC0:
+ 119 0000 523A00   		.ascii	"R:\000"
+ 120 0003 00       		.align	2
+ 121              	.LC1:
+ 122 0004 6C61743A 		.ascii	"lat:\000"
+ 122      00
+ 123 0009 000000   		.align	2
+ 124              	.LC2:
+ 125 000c 6C6F743A 		.ascii	"lot:\000"
+ 125      00
+ 126              		.section	.text.GPS_GL_GET,"ax",%progbits
+ 127              		.align	1
+ 128              		.p2align 4,,15
+ 129              		.global	GPS_GL_GET
+ 130              		.syntax unified
+ 131              		.thumb
+ 132              		.thumb_func
+ 134              	GPS_GL_GET:
+ 135              	.LFB482:
+ 136              		.file 1 "user_code/GPS.c"
+   1:user_code/GPS.c **** /*
+   2:user_code/GPS.c ****  * GPS.c
+   3:user_code/GPS.c ****  *
+   4:user_code/GPS.c ****  *  Created on: 2025年5月28日
+   5:user_code/GPS.c ****  *      Author: 王森，刘珈琪
+   6:user_code/GPS.c ****  */
+   7:user_code/GPS.c **** 
+   8:user_code/GPS.c **** #include "GPS.h"
+   9:user_code/GPS.c **** #include "nfc_usart.h"
+  10:user_code/GPS.c **** //1.先确定坐标点
+  11:user_code/GPS.c **** //2.利用坐标点代入逐飞角度计算函数--方向角
+  12:user_code/GPS.c **** //3.IMU-------------------航向角
+  13:user_code/GPS.c **** //4。用方向角-航向角-角度误差
+  14:user_code/GPS.c **** //存GPS坐标点--1.用flash（可以断电）  2.用数组。
+  15:user_code/GPS.c **** 
+  16:user_code/GPS.c **** #define FLASH_SECTION_INDEX       (0)                                           // 存储数据用�
+  17:user_code/GPS.c **** #define FLASH_PAGE_INDEX          (0)                                           // 存储数据用�
+  18:user_code/GPS.c **** 
+  19:user_code/GPS.c **** int      	RP_MAX=30;//点数
+  20:user_code/GPS.c **** int  		GL_NUM=0;
+  21:user_code/GPS.c **** 
+  22:user_code/GPS.c **** double    Target_point[2][150]={0};//用于储存采集的目标点信息，用于后续的位置�
+  23:user_code/GPS.c **** float    Work_target_array[2][150];//用于将从flash中读取的目标点数组的数据复制过
+  24:user_code/GPS.c **** double   lat; //纬度(英飞凌的FLASH只能存32位数据，所以用double类型定义的变量
+  25:user_code/GPS.c **** double   lot; //经度(英飞凌的FLASH只能存32位数据，所以用double类型定义的变量
+  26:user_code/GPS.c **** 
+  27:user_code/GPS.c **** uint32   I_lat;//double类型纬度数据整数部分
+  28:user_code/GPS.c **** float    F_lat;//double类型纬度数据小数部分(强制转换为float)(这里用float类型定
+  29:user_code/GPS.c **** 
+  30:user_code/GPS.c **** uint32   I_lot;//double类型经度数据整数部分
+  31:user_code/GPS.c **** float    F_lot;//double类型经度数据小数部分(强制转换为float)
+  32:user_code/GPS.c **** 
+  33:user_code/GPS.c **** int Number = 0;
+  34:user_code/GPS.c **** int GL_IMU_Flag = 0;//发车标志位
+  35:user_code/GPS.c **** float virtual_north ;//虚拟北
+  36:user_code/GPS.c **** double initial_imu_heading;//获取初始航向角
+  37:user_code/GPS.c **** extern eulerangles current_angles;                          // 当前欧拉角
+  38:user_code/GPS.c **** extern uint8 key;
+  39:user_code/GPS.c **** extern uint8_t right;
+  40:user_code/GPS.c **** extern uint8_t left;
+  41:user_code/GPS.c **** void GPS_GL_GET(void)
+  42:user_code/GPS.c **** {
+ 137              		.loc 1 42 1
+ 138              		.cfi_startproc
+ 139              		@ args = 0, pretend = 0, frame = 0
+ 140              		@ frame_needed = 0, uses_anonymous_args = 0
+ 141 0000 00B5     		push	{lr}
+ 142              		.cfi_def_cfa_offset 4
+ 143              		.cfi_offset 14, -4
+ 144 0002 83B0     		sub	sp, sp, #12
+ 145              		.cfi_def_cfa_offset 16
+  43:user_code/GPS.c **** 	 static int NUM=0;       //采集点的次数
+  44:user_code/GPS.c **** 	 {
+  45:user_code/GPS.c **** 		lat=gnss_info.latitude;
+ 146              		.loc 1 45 16
+ 147 0004 9C4B     		ldr	r3, .L4
+ 148 0006 D3E90623 		ldrd	r2, [r3, #24]
+ 149              		.loc 1 45 6
+ 150 000a 9C49     		ldr	r1, .L4+4
+ 151 000c C1E90023 		strd	r2, [r1]
+  46:user_code/GPS.c **** 		lot=gnss_info.longitude;
+ 152              		.loc 1 46 16
+ 153 0010 994B     		ldr	r3, .L4
+ 154 0012 D3E90823 		ldrd	r2, [r3, #32]
+ 155              		.loc 1 46 6
+ 156 0016 9A49     		ldr	r1, .L4+8
+ 157 0018 C1E90023 		strd	r2, [r1]
+  47:user_code/GPS.c **** 
+  48:user_code/GPS.c **** 		 I_lat=(uint32)(lat);//经过强转对lat取整得到整数部分
+ 158              		.loc 1 48 10
+ 159 001c 974B     		ldr	r3, .L4+4
+ 160 001e 93ED007B 		vldr.64	d7, [r3]
+ 161 0022 FCEEC77B 		vcvt.u32.f64	s15, d7
+ 162 0026 17EE902A 		vmov	r2, s15	@ int
+ 163              		.loc 1 48 9
+ 164 002a 964B     		ldr	r3, .L4+12
+ 165 002c 1A60     		str	r2, [r3]
+  49:user_code/GPS.c **** 		 F_lat=lat-I_lat; //用double类型数据-整数部分得到小数部分并强制转换为float�
+ 166              		.loc 1 49 13
+ 167 002e 934B     		ldr	r3, .L4+4
+ 168 0030 93ED006B 		vldr.64	d6, [r3]
+ 169 0034 934B     		ldr	r3, .L4+12
+ 170 0036 1B68     		ldr	r3, [r3]
+ 171 0038 07EE903A 		vmov	s15, r3	@ int
+ 172 003c B8EE677B 		vcvt.f64.u32	d7, s15
+ 173 0040 36EE477B 		vsub.f64	d7, d6, d7
+ 174 0044 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 175              		.loc 1 49 9
+ 176 0048 8F4B     		ldr	r3, .L4+16
+ 177 004a C3ED007A 		vstr.32	s15, [r3]
+  50:user_code/GPS.c **** 
+  51:user_code/GPS.c **** 		 I_lot=(uint32)(lot);//经过强转对lat取整得到整数部分
+ 178              		.loc 1 51 10
+ 179 004e 8C4B     		ldr	r3, .L4+8
+ 180 0050 93ED007B 		vldr.64	d7, [r3]
+ 181 0054 FCEEC77B 		vcvt.u32.f64	s15, d7
+ 182 0058 17EE902A 		vmov	r2, s15	@ int
+ 183              		.loc 1 51 9
+ 184 005c 8B4B     		ldr	r3, .L4+20
+ 185 005e 1A60     		str	r2, [r3]
+  52:user_code/GPS.c **** 		 F_lot=lot-I_lot; //用double类型数据-整数部分得到小数部分并强制转换为float�
+ 186              		.loc 1 52 13
+ 187 0060 874B     		ldr	r3, .L4+8
+ 188 0062 93ED006B 		vldr.64	d6, [r3]
+ 189 0066 894B     		ldr	r3, .L4+20
+ 190 0068 1B68     		ldr	r3, [r3]
+ 191 006a 07EE903A 		vmov	s15, r3	@ int
+ 192 006e B8EE677B 		vcvt.f64.u32	d7, s15
+ 193 0072 36EE477B 		vsub.f64	d7, d6, d7
+ 194 0076 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 195              		.loc 1 52 9
+ 196 007a 854B     		ldr	r3, .L4+24
+ 197 007c C3ED007A 		vstr.32	s15, [r3]
+  53:user_code/GPS.c **** 		ips200_clear();
+ 198              		.loc 1 53 3
+ 199 0080 8448     		ldr	r0, .L4+28
+ 200 0082 FFF7FEFF 		bl	display_interface_clear
+  54:user_code/GPS.c **** 		ips200_show_string(0,16*0,"R:");
+ 201              		.loc 1 54 3
+ 202 0086 844B     		ldr	r3, .L4+32
+ 203 0088 0022     		movs	r2, #0
+ 204 008a 0021     		movs	r1, #0
+ 205 008c 8148     		ldr	r0, .L4+28
+ 206 008e FFF7FEFF 		bl	display_interface_show_string
+  55:user_code/GPS.c **** 		{
+  56:user_code/GPS.c **** 			flash_union_buffer[Number].uint32_type=I_lat;  //将整数维度数据强制转换后储存在FL
+ 207              		.loc 1 56 30
+ 208 0092 824B     		ldr	r3, .L4+36
+ 209 0094 1B68     		ldr	r3, [r3]
+ 210              		.loc 1 56 42
+ 211 0096 7B4A     		ldr	r2, .L4+12
+ 212 0098 1268     		ldr	r2, [r2]
+ 213 009a 8149     		ldr	r1, .L4+40
+ 214 009c 41F82320 		str	r2, [r1, r3, lsl #2]
+  57:user_code/GPS.c **** 			ips200_show_string(50, 16*0, "lat:");
+ 215              		.loc 1 57 4
+ 216 00a0 804B     		ldr	r3, .L4+44
+ 217 00a2 0022     		movs	r2, #0
+ 218 00a4 3221     		movs	r1, #50
+ 219 00a6 7B48     		ldr	r0, .L4+28
+ 220 00a8 FFF7FEFF 		bl	display_interface_show_string
+  58:user_code/GPS.c **** 			ips200_show_uint (50, 16*1, flash_union_buffer[Number].uint32_type, 5);  //显示整数部分
+ 221              		.loc 1 58 4
+ 222 00ac 7B4B     		ldr	r3, .L4+36
+ 223 00ae 1B68     		ldr	r3, [r3]
+ 224 00b0 7B4A     		ldr	r2, .L4+40
+ 225 00b2 52F82330 		ldr	r3, [r2, r3, lsl #2]
+ 226 00b6 0522     		movs	r2, #5
+ 227 00b8 0092     		str	r2, [sp]
+ 228 00ba 1022     		movs	r2, #16
+ 229 00bc 3221     		movs	r1, #50
+ 230 00be 7548     		ldr	r0, .L4+28
+ 231 00c0 FFF7FEFF 		bl	display_interface_show_uint
+  59:user_code/GPS.c **** 			ips200_show_uint(150, 16*1, Number, 3);//缓冲区数组位数
+ 232              		.loc 1 59 4
+ 233 00c4 754B     		ldr	r3, .L4+36
+ 234 00c6 1B68     		ldr	r3, [r3]
+ 235 00c8 1A46     		mov	r2, r3
+ 236 00ca 0323     		movs	r3, #3
+ 237 00cc 0093     		str	r3, [sp]
+ 238 00ce 1346     		mov	r3, r2
+ 239 00d0 1022     		movs	r2, #16
+ 240 00d2 9621     		movs	r1, #150
+ 241 00d4 6F48     		ldr	r0, .L4+28
+ 242 00d6 FFF7FEFF 		bl	display_interface_show_uint
+  60:user_code/GPS.c **** 
+  61:user_code/GPS.c **** 			Number++;
+ 243              		.loc 1 61 10
+ 244 00da 704B     		ldr	r3, .L4+36
+ 245 00dc 1B68     		ldr	r3, [r3]
+ 246 00de 0133     		adds	r3, r3, #1
+ 247 00e0 6E4A     		ldr	r2, .L4+36
+ 248 00e2 1360     		str	r3, [r2]
+  62:user_code/GPS.c **** 
+  63:user_code/GPS.c **** 			flash_union_buffer[Number].float_type=F_lat; //将浮点数维度数据强制转换后储存在F
+ 249              		.loc 1 63 30
+ 250 00e4 6D4B     		ldr	r3, .L4+36
+ 251 00e6 1B68     		ldr	r3, [r3]
+ 252              		.loc 1 63 41
+ 253 00e8 674A     		ldr	r2, .L4+16
+ 254 00ea 1268     		ldr	r2, [r2]	@ float
+ 255 00ec 6C49     		ldr	r1, .L4+40
+ 256 00ee 9B00     		lsls	r3, r3, #2
+ 257 00f0 0B44     		add	r3, r3, r1
+ 258 00f2 1A60     		str	r2, [r3]	@ float
+  64:user_code/GPS.c **** 			ips200_show_float(50, 16*2, flash_union_buffer[Number].float_type, 3, 6);//显示小数部分
+ 259              		.loc 1 64 4
+ 260 00f4 694B     		ldr	r3, .L4+36
+ 261 00f6 1B68     		ldr	r3, [r3]
+ 262 00f8 694A     		ldr	r2, .L4+40
+ 263 00fa 9B00     		lsls	r3, r3, #2
+ 264 00fc 1344     		add	r3, r3, r2
+ 265 00fe D3ED007A 		vldr.32	s15, [r3]
+ 266 0102 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 267 0106 0623     		movs	r3, #6
+ 268 0108 0093     		str	r3, [sp]
+ 269 010a 0323     		movs	r3, #3
+ 270 010c B0EE470B 		vmov.f64	d0, d7
+ 271 0110 2022     		movs	r2, #32
+ 272 0112 3221     		movs	r1, #50
+ 273 0114 5F48     		ldr	r0, .L4+28
+ 274 0116 FFF7FEFF 		bl	display_interface_show_float
+  65:user_code/GPS.c **** 			ips200_show_uint(150, 16*2, Number, 3);//缓冲区数组位数
+ 275              		.loc 1 65 4
+ 276 011a 604B     		ldr	r3, .L4+36
+ 277 011c 1B68     		ldr	r3, [r3]
+ 278 011e 1A46     		mov	r2, r3
+ 279 0120 0323     		movs	r3, #3
+ 280 0122 0093     		str	r3, [sp]
+ 281 0124 1346     		mov	r3, r2
+ 282 0126 2022     		movs	r2, #32
+ 283 0128 9621     		movs	r1, #150
+ 284 012a 5A48     		ldr	r0, .L4+28
+ 285 012c FFF7FEFF 		bl	display_interface_show_uint
+  66:user_code/GPS.c **** 
+  67:user_code/GPS.c **** 			ips200_show_float(50, 16*3, gnss_info.latitude, 3, 6);//显示完整坐标
+ 286              		.loc 1 67 4
+ 287 0130 514B     		ldr	r3, .L4
+ 288 0132 93ED067B 		vldr.64	d7, [r3, #24]
+ 289 0136 0623     		movs	r3, #6
+ 290 0138 0093     		str	r3, [sp]
+ 291 013a 0323     		movs	r3, #3
+ 292 013c B0EE470B 		vmov.f64	d0, d7
+ 293 0140 3022     		movs	r2, #48
+ 294 0142 3221     		movs	r1, #50
+ 295 0144 5348     		ldr	r0, .L4+28
+ 296 0146 FFF7FEFF 		bl	display_interface_show_float
+  68:user_code/GPS.c **** 
+  69:user_code/GPS.c **** 		}
+  70:user_code/GPS.c **** 		 Number++;//数组下标+1,切换储存经度
+ 297              		.loc 1 70 10
+ 298 014a 544B     		ldr	r3, .L4+36
+ 299 014c 1B68     		ldr	r3, [r3]
+ 300 014e 0133     		adds	r3, r3, #1
+ 301 0150 524A     		ldr	r2, .L4+36
+ 302 0152 1360     		str	r3, [r2]
+  71:user_code/GPS.c **** 
+  72:user_code/GPS.c **** 		{
+  73:user_code/GPS.c **** 		    ips200_show_string(50, 16*0, "lot:");
+ 303              		.loc 1 73 7
+ 304 0154 544B     		ldr	r3, .L4+48
+ 305 0156 0022     		movs	r2, #0
+ 306 0158 3221     		movs	r1, #50
+ 307 015a 4E48     		ldr	r0, .L4+28
+ 308 015c FFF7FEFF 		bl	display_interface_show_string
+  74:user_code/GPS.c **** 		    flash_union_buffer[Number].uint32_type=I_lot;  //将整数经度数据强制转换后储存�
+ 309              		.loc 1 74 33
+ 310 0160 4E4B     		ldr	r3, .L4+36
+ 311 0162 1B68     		ldr	r3, [r3]
+ 312              		.loc 1 74 45
+ 313 0164 494A     		ldr	r2, .L4+20
+ 314 0166 1268     		ldr	r2, [r2]
+ 315 0168 4D49     		ldr	r1, .L4+40
+ 316 016a 41F82320 		str	r2, [r1, r3, lsl #2]
+  75:user_code/GPS.c **** 		    ips200_show_uint (50, 16*5, flash_union_buffer[Number].uint32_type, 5);  //显示整数部分
+ 317              		.loc 1 75 7
+ 318 016e 4B4B     		ldr	r3, .L4+36
+ 319 0170 1B68     		ldr	r3, [r3]
+ 320 0172 4B4A     		ldr	r2, .L4+40
+ 321 0174 52F82330 		ldr	r3, [r2, r3, lsl #2]
+ 322 0178 0522     		movs	r2, #5
+ 323 017a 0092     		str	r2, [sp]
+ 324 017c 5022     		movs	r2, #80
+ 325 017e 3221     		movs	r1, #50
+ 326 0180 4448     		ldr	r0, .L4+28
+ 327 0182 FFF7FEFF 		bl	display_interface_show_uint
+  76:user_code/GPS.c **** 		    ips200_show_uint(150, 16*5, Number, 3);//缓冲区数组位数
+ 328              		.loc 1 76 7
+ 329 0186 454B     		ldr	r3, .L4+36
+ 330 0188 1B68     		ldr	r3, [r3]
+ 331 018a 1A46     		mov	r2, r3
+ 332 018c 0323     		movs	r3, #3
+ 333 018e 0093     		str	r3, [sp]
+ 334 0190 1346     		mov	r3, r2
+ 335 0192 5022     		movs	r2, #80
+ 336 0194 9621     		movs	r1, #150
+ 337 0196 3F48     		ldr	r0, .L4+28
+ 338 0198 FFF7FEFF 		bl	display_interface_show_uint
+  77:user_code/GPS.c **** 
+  78:user_code/GPS.c **** 		    Number++;
+ 339              		.loc 1 78 13
+ 340 019c 3F4B     		ldr	r3, .L4+36
+ 341 019e 1B68     		ldr	r3, [r3]
+ 342 01a0 0133     		adds	r3, r3, #1
+ 343 01a2 3E4A     		ldr	r2, .L4+36
+ 344 01a4 1360     		str	r3, [r2]
+  79:user_code/GPS.c **** 
+  80:user_code/GPS.c **** 		    flash_union_buffer[Number].float_type=F_lot; //将浮点数经度数据强制转换后储存�
+ 345              		.loc 1 80 33
+ 346 01a6 3D4B     		ldr	r3, .L4+36
+ 347 01a8 1B68     		ldr	r3, [r3]
+ 348              		.loc 1 80 44
+ 349 01aa 394A     		ldr	r2, .L4+24
+ 350 01ac 1268     		ldr	r2, [r2]	@ float
+ 351 01ae 3C49     		ldr	r1, .L4+40
+ 352 01b0 9B00     		lsls	r3, r3, #2
+ 353 01b2 0B44     		add	r3, r3, r1
+ 354 01b4 1A60     		str	r2, [r3]	@ float
+  81:user_code/GPS.c **** 		    ips200_show_float(50, 16*6, flash_union_buffer[Number].float_type, 3, 6);//显示小数部分
+ 355              		.loc 1 81 7
+ 356 01b6 394B     		ldr	r3, .L4+36
+ 357 01b8 1B68     		ldr	r3, [r3]
+ 358 01ba 394A     		ldr	r2, .L4+40
+ 359 01bc 9B00     		lsls	r3, r3, #2
+ 360 01be 1344     		add	r3, r3, r2
+ 361 01c0 D3ED007A 		vldr.32	s15, [r3]
+ 362 01c4 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 363 01c8 0623     		movs	r3, #6
+ 364 01ca 0093     		str	r3, [sp]
+ 365 01cc 0323     		movs	r3, #3
+ 366 01ce B0EE470B 		vmov.f64	d0, d7
+ 367 01d2 6022     		movs	r2, #96
+ 368 01d4 3221     		movs	r1, #50
+ 369 01d6 2F48     		ldr	r0, .L4+28
+ 370 01d8 FFF7FEFF 		bl	display_interface_show_float
+  82:user_code/GPS.c **** 		    ips200_show_uint(150, 16*6, Number, 3);//缓冲区数组位数
+ 371              		.loc 1 82 7
+ 372 01dc 2F4B     		ldr	r3, .L4+36
+ 373 01de 1B68     		ldr	r3, [r3]
+ 374 01e0 1A46     		mov	r2, r3
+ 375 01e2 0323     		movs	r3, #3
+ 376 01e4 0093     		str	r3, [sp]
+ 377 01e6 1346     		mov	r3, r2
+ 378 01e8 6022     		movs	r2, #96
+ 379 01ea 9621     		movs	r1, #150
+ 380 01ec 2948     		ldr	r0, .L4+28
+ 381 01ee FFF7FEFF 		bl	display_interface_show_uint
+  83:user_code/GPS.c **** 
+  84:user_code/GPS.c **** 		    ips200_show_float(50, 16*7, gnss_info.longitude, 3, 6);//显示完整坐标
+ 382              		.loc 1 84 7
+ 383 01f2 214B     		ldr	r3, .L4
+ 384 01f4 93ED087B 		vldr.64	d7, [r3, #32]
+ 385 01f8 0623     		movs	r3, #6
+ 386 01fa 0093     		str	r3, [sp]
+ 387 01fc 0323     		movs	r3, #3
+ 388 01fe B0EE470B 		vmov.f64	d0, d7
+ 389 0202 7022     		movs	r2, #112
+ 390 0204 3221     		movs	r1, #50
+ 391 0206 2348     		ldr	r0, .L4+28
+ 392 0208 FFF7FEFF 		bl	display_interface_show_float
+  85:user_code/GPS.c **** 		}
+  86:user_code/GPS.c **** 		 Number++;//数组下标+1,切换储存纬度
+ 393              		.loc 1 86 10
+ 394 020c 234B     		ldr	r3, .L4+36
+ 395 020e 1B68     		ldr	r3, [r3]
+ 396 0210 0133     		adds	r3, r3, #1
+ 397 0212 224A     		ldr	r2, .L4+36
+ 398 0214 1360     		str	r3, [r2]
+  87:user_code/GPS.c ****          //如果我没有手动清除GPS_FLASH，则下面这段语句会自动清除GPS_FLASH，�
+  88:user_code/GPS.c **** 		 if(zf_flash_check_page(FLASH_SECTION_INDEX, FLASH_PAGE_INDEX))              // 判断是否有�
+ 399              		.loc 1 88 7
+ 400 0216 0021     		movs	r1, #0
+ 401 0218 0020     		movs	r0, #0
+ 402 021a FFF7FEFF 		bl	zf_flash_check_page
+ 403 021e 0346     		mov	r3, r0
+ 404              		.loc 1 88 6
+ 405 0220 002B     		cmp	r3, #0
+ 406 0222 03D0     		beq	.L2
+  89:user_code/GPS.c **** 		 {
+  90:user_code/GPS.c **** 		         zf_flash_erase_page(FLASH_SECTION_INDEX, FLASH_PAGE_INDEX);             // 擦除这一�
+ 407              		.loc 1 90 12
+ 408 0224 0021     		movs	r1, #0
+ 409 0226 0020     		movs	r0, #0
+ 410 0228 FFF7FEFF 		bl	zf_flash_erase_page
+ 411              	.L2:
+  91:user_code/GPS.c **** 		 }
+  92:user_code/GPS.c **** 		 zf_flash_write_page_from_buffer(FLASH_SECTION_INDEX, FLASH_PAGE_INDEX);     // 向指定 Flash �
+ 412              		.loc 1 92 4
+ 413 022c 0021     		movs	r1, #0
+ 414 022e 0020     		movs	r0, #0
+ 415 0230 FFF7FEFF 		bl	zf_flash_write_page_from_buffer
+  93:user_code/GPS.c **** 	 }
+  94:user_code/GPS.c **** 	 NUM++;
+ 416              		.loc 1 94 6
+ 417 0234 1D4B     		ldr	r3, .L4+52
+ 418 0236 1B68     		ldr	r3, [r3]
+ 419 0238 0133     		adds	r3, r3, #1
+ 420 023a 1C4A     		ldr	r2, .L4+52
+ 421 023c 1360     		str	r3, [r2]
+  95:user_code/GPS.c **** 	 GL_NUM=NUM;
+ 422              		.loc 1 95 9
+ 423 023e 1B4B     		ldr	r3, .L4+52
+ 424 0240 1B68     		ldr	r3, [r3]
+ 425 0242 1B4A     		ldr	r2, .L4+56
+ 426 0244 1360     		str	r3, [r2]
+  96:user_code/GPS.c **** 	     if(NUM>RP_MAX)                                                               //如果采集�
+ 427              		.loc 1 96 13
+ 428 0246 194B     		ldr	r3, .L4+52
+ 429 0248 1A68     		ldr	r2, [r3]
+ 430 024a 1A4B     		ldr	r3, .L4+60
+ 431 024c 1B68     		ldr	r3, [r3]
+ 432              		.loc 1 96 9
+ 433 024e 9A42     		cmp	r2, r3
+ 434 0250 02DD     		ble	.L3
+  97:user_code/GPS.c **** 	     {
+  98:user_code/GPS.c **** 	          NUM=1;
+ 435              		.loc 1 98 15
+ 436 0252 164B     		ldr	r3, .L4+52
+ 437 0254 0122     		movs	r2, #1
+ 438 0256 1A60     		str	r2, [r3]
+ 439              	.L3:
+  99:user_code/GPS.c **** 	     }
+ 100:user_code/GPS.c **** 
+ 101:user_code/GPS.c **** 	     ips200_show_uint(210, 0, NUM, 3);                                              //显示已采
+ 440              		.loc 1 101 7
+ 441 0258 144B     		ldr	r3, .L4+52
+ 442 025a 1B68     		ldr	r3, [r3]
+ 443 025c 1A46     		mov	r2, r3
+ 444 025e 0323     		movs	r3, #3
+ 445 0260 0093     		str	r3, [sp]
+ 446 0262 1346     		mov	r3, r2
+ 447 0264 0022     		movs	r2, #0
+ 448 0266 D221     		movs	r1, #210
+ 449 0268 0A48     		ldr	r0, .L4+28
+ 450 026a FFF7FEFF 		bl	display_interface_show_uint
+ 102:user_code/GPS.c **** }
+ 451              		.loc 1 102 1
+ 452 026e 00BF     		nop
+ 453 0270 03B0     		add	sp, sp, #12
+ 454              		.cfi_def_cfa_offset 4
+ 455              		@ sp needed
+ 456 0272 5DF804FB 		ldr	pc, [sp], #4
+ 457              	.L5:
+ 458 0276 00BF     		.align	2
+ 459              	.L4:
+ 460 0278 00000000 		.word	gnss_info
+ 461 027c 00000000 		.word	lat
+ 462 0280 00000000 		.word	lot
+ 463 0284 00000000 		.word	I_lat
+ 464 0288 00000000 		.word	F_lat
+ 465 028c 00000000 		.word	I_lot
+ 466 0290 00000000 		.word	F_lot
+ 467 0294 00000000 		.word	display_interface_default_obj
+ 468 0298 00000000 		.word	.LC0
+ 469 029c 00000000 		.word	Number
+ 470 02a0 00000000 		.word	flash_union_buffer
+ 471 02a4 04000000 		.word	.LC1
+ 472 02a8 0C000000 		.word	.LC2
+ 473 02ac 00000000 		.word	NUM.2
+ 474 02b0 00000000 		.word	GL_NUM
+ 475 02b4 00000000 		.word	RP_MAX
+ 476              		.cfi_endproc
+ 477              	.LFE482:
+ 479              		.section	.text.GPS_Flash_use,"ax",%progbits
+ 480              		.align	1
+ 481              		.p2align 4,,15
+ 482              		.global	GPS_Flash_use
+ 483              		.syntax unified
+ 484              		.thumb
+ 485              		.thumb_func
+ 487              	GPS_Flash_use:
+ 488              	.LFB483:
+ 103:user_code/GPS.c **** void GPS_Flash_use(void)//将GPS_FLASH的数据重新读回缓冲区并赋值给数组
+ 104:user_code/GPS.c **** {
+ 489              		.loc 1 104 1
+ 490              		.cfi_startproc
+ 491              		@ args = 0, pretend = 0, frame = 8
+ 492              		@ frame_needed = 0, uses_anonymous_args = 0
+ 493 0000 00B5     		push	{lr}
+ 494              		.cfi_def_cfa_offset 4
+ 495              		.cfi_offset 14, -4
+ 496 0002 83B0     		sub	sp, sp, #12
+ 497              		.cfi_def_cfa_offset 16
+ 105:user_code/GPS.c **** 
+ 106:user_code/GPS.c **** 	zf_flash_buffer_clear();//清空缓冲区
+ 498              		.loc 1 106 2
+ 499 0004 FFF7FEFF 		bl	zf_flash_buffer_clear
+ 107:user_code/GPS.c **** 
+ 108:user_code/GPS.c **** 	 if(zf_flash_check_page(FLASH_SECTION_INDEX, FLASH_PAGE_INDEX)==FLASH_STATE_PAGE_OCCUPIED)        
+ 500              		.loc 1 108 6
+ 501 0008 0021     		movs	r1, #0
+ 502 000a 0020     		movs	r0, #0
+ 503 000c FFF7FEFF 		bl	zf_flash_check_page
+ 504 0010 0346     		mov	r3, r0
+ 505              		.loc 1 108 5
+ 506 0012 022B     		cmp	r3, #2
+ 507 0014 45D1     		bne	.L10
+ 508              	.LBB2:
+ 109:user_code/GPS.c ****     {
+ 110:user_code/GPS.c **** 		 zf_flash_read_page_to_buffer(FLASH_SECTION_INDEX, FLASH_PAGE_INDEX);       //将数据从FLASH�
+ 509              		.loc 1 110 4
+ 510 0016 0021     		movs	r1, #0
+ 511 0018 0020     		movs	r0, #0
+ 512 001a FFF7FEFF 		bl	zf_flash_read_page_to_buffer
+ 111:user_code/GPS.c **** 
+ 112:user_code/GPS.c ****         int TG=0;//用以切换二维数组下标
+ 513              		.loc 1 112 13
+ 514 001e 0023     		movs	r3, #0
+ 515 0020 0193     		str	r3, [sp, #4]
+ 516              	.LBB3:
+ 113:user_code/GPS.c **** 
+ 114:user_code/GPS.c ****         for(int data=0;data<200;data+=4)
+ 517              		.loc 1 114 17
+ 518 0022 0023     		movs	r3, #0
+ 519 0024 0093     		str	r3, [sp]
+ 520              		.loc 1 114 9
+ 521 0026 39E0     		b	.L8
+ 522              	.L9:
+ 115:user_code/GPS.c ****           {
+ 116:user_code/GPS.c **** 
+ 117:user_code/GPS.c ****             Target_point[0][TG]=(double)flash_union_buffer[data].uint32_type+(double)flash_union_bu
+ 523              		.loc 1 117 65 discriminator 3
+ 524 0028 204A     		ldr	r2, .L11
+ 525 002a 009B     		ldr	r3, [sp]
+ 526 002c 52F82330 		ldr	r3, [r2, r3, lsl #2]
+ 527              		.loc 1 117 33 discriminator 3
+ 528 0030 07EE903A 		vmov	s15, r3	@ int
+ 529 0034 B8EE676B 		vcvt.f64.u32	d6, s15
+ 530              		.loc 1 117 109 discriminator 3
+ 531 0038 009B     		ldr	r3, [sp]
+ 532 003a 0133     		adds	r3, r3, #1
+ 533              		.loc 1 117 112 discriminator 3
+ 534 003c 1B4A     		ldr	r2, .L11
+ 535 003e 9B00     		lsls	r3, r3, #2
+ 536 0040 1344     		add	r3, r3, r2
+ 537 0042 D3ED007A 		vldr.32	s15, [r3]
+ 538              		.loc 1 117 78 discriminator 3
+ 539 0046 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 540              		.loc 1 117 77 discriminator 3
+ 541 004a 36EE077B 		vadd.f64	d7, d6, d7
+ 542              		.loc 1 117 32 discriminator 3
+ 543 004e 184A     		ldr	r2, .L11+4
+ 544 0050 019B     		ldr	r3, [sp, #4]
+ 545 0052 DB00     		lsls	r3, r3, #3
+ 546 0054 1344     		add	r3, r3, r2
+ 547 0056 83ED007B 		vstr.64	d7, [r3]
+ 118:user_code/GPS.c **** 
+ 119:user_code/GPS.c ****             Target_point[1][TG]=(double)flash_union_buffer[data+2].uint32_type+(double)flash_union_
+ 548              		.loc 1 119 64 discriminator 3
+ 549 005a 009B     		ldr	r3, [sp]
+ 550 005c 0233     		adds	r3, r3, #2
+ 551              		.loc 1 119 67 discriminator 3
+ 552 005e 134A     		ldr	r2, .L11
+ 553 0060 52F82330 		ldr	r3, [r2, r3, lsl #2]
+ 554              		.loc 1 119 33 discriminator 3
+ 555 0064 07EE903A 		vmov	s15, r3	@ int
+ 556 0068 B8EE676B 		vcvt.f64.u32	d6, s15
+ 557              		.loc 1 119 111 discriminator 3
+ 558 006c 009B     		ldr	r3, [sp]
+ 559 006e 0333     		adds	r3, r3, #3
+ 560              		.loc 1 119 114 discriminator 3
+ 561 0070 0E4A     		ldr	r2, .L11
+ 562 0072 9B00     		lsls	r3, r3, #2
+ 563 0074 1344     		add	r3, r3, r2
+ 564 0076 D3ED007A 		vldr.32	s15, [r3]
+ 565              		.loc 1 119 80 discriminator 3
+ 566 007a B7EEE77A 		vcvt.f64.f32	d7, s15
+ 567              		.loc 1 119 79 discriminator 3
+ 568 007e 36EE077B 		vadd.f64	d7, d6, d7
+ 569              		.loc 1 119 32 discriminator 3
+ 570 0082 0B4A     		ldr	r2, .L11+4
+ 571 0084 019B     		ldr	r3, [sp, #4]
+ 572 0086 9633     		adds	r3, r3, #150
+ 573 0088 DB00     		lsls	r3, r3, #3
+ 574 008a 1344     		add	r3, r3, r2
+ 575 008c 83ED007B 		vstr.64	d7, [r3]
+ 120:user_code/GPS.c **** 
+ 121:user_code/GPS.c ****             TG++;//下标+1
+ 576              		.loc 1 121 15 discriminator 3
+ 577 0090 019B     		ldr	r3, [sp, #4]
+ 578 0092 0133     		adds	r3, r3, #1
+ 579 0094 0193     		str	r3, [sp, #4]
+ 114:user_code/GPS.c ****           {
+ 580              		.loc 1 114 37 discriminator 3
+ 581 0096 009B     		ldr	r3, [sp]
+ 582 0098 0433     		adds	r3, r3, #4
+ 583 009a 0093     		str	r3, [sp]
+ 584              	.L8:
+ 114:user_code/GPS.c ****           {
+ 585              		.loc 1 114 9 discriminator 1
+ 586 009c 009B     		ldr	r3, [sp]
+ 587 009e C72B     		cmp	r3, #199
+ 588 00a0 C2DD     		ble	.L9
+ 589              	.L10:
+ 590              	.LBE3:
+ 591              	.LBE2:
+ 122:user_code/GPS.c **** 
+ 123:user_code/GPS.c ****           }
+ 124:user_code/GPS.c **** 
+ 125:user_code/GPS.c **** 
+ 126:user_code/GPS.c ****     }
+ 127:user_code/GPS.c **** 
+ 128:user_code/GPS.c **** }
+ 592              		.loc 1 128 1
+ 593 00a2 00BF     		nop
+ 594 00a4 03B0     		add	sp, sp, #12
+ 595              		.cfi_def_cfa_offset 4
+ 596              		@ sp needed
+ 597 00a6 5DF804FB 		ldr	pc, [sp], #4
+ 598              	.L12:
+ 599 00aa 00BF     		.align	2
+ 600              	.L11:
+ 601 00ac 00000000 		.word	flash_union_buffer
+ 602 00b0 00000000 		.word	Target_point
+ 603              		.cfi_endproc
+ 604              	.LFE483:
+ 606              		.section	.rodata
+ 607 0011 000000   		.align	2
+ 608              	.LC3:
+ 609 0014 53616D70 		.ascii	"Sampling mode\000"
+ 609      6C696E67 
+ 609      206D6F64 
+ 609      6500
+ 610 0022 0000     		.align	2
+ 611              	.LC4:
+ 612 0024 466C6173 		.ascii	"Flash\000"
+ 612      6800
+ 613 002a 0000     		.align	2
+ 614              	.LC5:
+ 615 002c 50494420 		.ascii	"PID control\000"
+ 615      636F6E74 
+ 615      726F6C00 
+ 616              		.align	2
+ 617              	.LC6:
+ 618 0038 65786974 		.ascii	"exit Sampling mode\000"
+ 618      2053616D 
+ 618      706C696E 
+ 618      67206D6F 
+ 618      646500
+ 619 004b 00       		.align	2
+ 620              	.LC7:
+ 621 004c 0D0A7A75 		.ascii	"\015\012zushu-%d,latitude-%f,longitude-%f\000"
+ 621      7368752D 
+ 621      25642C6C 
+ 621      61746974 
+ 621      7564652D 
+ 622              		.section	.text.GL_CRC,"ax",%progbits
+ 623              		.align	1
+ 624              		.p2align 4,,15
+ 625              		.global	GL_CRC
+ 626              		.syntax unified
+ 627              		.thumb
+ 628              		.thumb_func
+ 630              	GL_CRC:
+ 631              	.LFB484:
+ 129:user_code/GPS.c **** 
+ 130:user_code/GPS.c **** uint8 GL_CRC()//按照规则按下就会发车
+ 131:user_code/GPS.c **** {
+ 632              		.loc 1 131 1
+ 633              		.cfi_startproc
+ 634              		@ args = 0, pretend = 0, frame = 16
+ 635              		@ frame_needed = 0, uses_anonymous_args = 0
+ 636 0000 10B5     		push	{r4, lr}
+ 637              		.cfi_def_cfa_offset 8
+ 638              		.cfi_offset 4, -8
+ 639              		.cfi_offset 14, -4
+ 640 0002 86B0     		sub	sp, sp, #24
+ 641              		.cfi_def_cfa_offset 32
+ 132:user_code/GPS.c **** 	static uint8 state = 0; // 状态：0-初始，1-采集模式，2-使用Flash模式
+ 133:user_code/GPS.c **** 	uint16 current_ch3 = uart_receiver.channel[2];
+ 642              		.loc 1 133 9
+ 643 0004 9B4B     		ldr	r3, .L33
+ 644 0006 9B88     		ldrh	r3, [r3, #4]	@ movhi
+ 645 0008 ADF80E30 		strh	r3, [sp, #14]	@ movhi
+ 134:user_code/GPS.c **** 	static uint16 last_ch3_state = 0; // 记录上次通道3的值
+ 135:user_code/GPS.c **** 	// 状态0：初始状态
+ 136:user_code/GPS.c **** 	if (state == 0)
+ 646              		.loc 1 136 12
+ 647 000c 9A4B     		ldr	r3, .L33+4
+ 648 000e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 649              		.loc 1 136 5
+ 650 0010 002B     		cmp	r3, #0
+ 651 0012 31D1     		bne	.L14
+ 137:user_code/GPS.c **** 	{
+ 138:user_code/GPS.c **** 	    if (key == KEY_C10_PRES) // 如果按下key1，进入采集模式
+ 652              		.loc 1 138 14
+ 653 0014 994B     		ldr	r3, .L33+8
+ 654 0016 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 655              		.loc 1 138 9
+ 656 0018 012B     		cmp	r3, #1
+ 657 001a 0BD1     		bne	.L15
+ 139:user_code/GPS.c **** 	    {
+ 140:user_code/GPS.c **** 	        state = 1;
+ 658              		.loc 1 140 16
+ 659 001c 964B     		ldr	r3, .L33+4
+ 660 001e 0122     		movs	r2, #1
+ 661 0020 1A70     		strb	r2, [r3]
+ 141:user_code/GPS.c **** 	        ips200_clear();
+ 662              		.loc 1 141 10
+ 663 0022 9748     		ldr	r0, .L33+12
+ 664 0024 FFF7FEFF 		bl	display_interface_clear
+ 142:user_code/GPS.c **** 	        ips200_show_string(0, 0, "Sampling mode");
+ 665              		.loc 1 142 10
+ 666 0028 964B     		ldr	r3, .L33+16
+ 667 002a 0022     		movs	r2, #0
+ 668 002c 0021     		movs	r1, #0
+ 669 002e 9448     		ldr	r0, .L33+12
+ 670 0030 FFF7FEFF 		bl	display_interface_show_string
+ 671              	.L15:
+ 143:user_code/GPS.c **** 	    }
+ 144:user_code/GPS.c **** 	    if (key == KEY_C9_PRES) // 如果按下key2，进入Flash模式
+ 672              		.loc 1 144 14
+ 673 0034 914B     		ldr	r3, .L33+8
+ 674 0036 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 675              		.loc 1 144 9
+ 676 0038 022B     		cmp	r3, #2
+ 677 003a 0BD1     		bne	.L16
+ 145:user_code/GPS.c **** 	    {
+ 146:user_code/GPS.c **** 	        ips200_clear();
+ 678              		.loc 1 146 10
+ 679 003c 9048     		ldr	r0, .L33+12
+ 680 003e FFF7FEFF 		bl	display_interface_clear
+ 147:user_code/GPS.c ****             ips200_show_string(0, 0, "Flash");
+ 681              		.loc 1 147 13
+ 682 0042 914B     		ldr	r3, .L33+20
+ 683 0044 0022     		movs	r2, #0
+ 684 0046 0021     		movs	r1, #0
+ 685 0048 8D48     		ldr	r0, .L33+12
+ 686 004a FFF7FEFF 		bl	display_interface_show_string
+ 148:user_code/GPS.c **** 	        state = 2;
+ 687              		.loc 1 148 16
+ 688 004e 8A4B     		ldr	r3, .L33+4
+ 689 0050 0222     		movs	r2, #2
+ 690 0052 1A70     		strb	r2, [r3]
+ 691              	.L16:
+ 149:user_code/GPS.c **** 	    }
+ 150:user_code/GPS.c **** 	    if (key == KEY_C7_PRES) // 如果按下key4，进入PID调节角度模式
+ 692              		.loc 1 150 14
+ 693 0054 894B     		ldr	r3, .L33+8
+ 694 0056 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 695              		.loc 1 150 9
+ 696 0058 042B     		cmp	r3, #4
+ 697 005a 40F00681 		bne	.L17
+ 151:user_code/GPS.c ****         {
+ 152:user_code/GPS.c ****             ips200_clear();
+ 698              		.loc 1 152 13
+ 699 005e 8848     		ldr	r0, .L33+12
+ 700 0060 FFF7FEFF 		bl	display_interface_clear
+ 153:user_code/GPS.c ****             ips200_show_string(0, 0, "PID control");
+ 701              		.loc 1 153 13
+ 702 0064 894B     		ldr	r3, .L33+24
+ 703 0066 0022     		movs	r2, #0
+ 704 0068 0021     		movs	r1, #0
+ 705 006a 8548     		ldr	r0, .L33+12
+ 706 006c FFF7FEFF 		bl	display_interface_show_string
+ 154:user_code/GPS.c ****             state = 3;
+ 707              		.loc 1 154 19
+ 708 0070 814B     		ldr	r3, .L33+4
+ 709 0072 0322     		movs	r2, #3
+ 710 0074 1A70     		strb	r2, [r3]
+ 711 0076 F8E0     		b	.L17
+ 712              	.L14:
+ 155:user_code/GPS.c ****         }
+ 156:user_code/GPS.c **** 	}
+ 157:user_code/GPS.c **** 	// 状态1：采集模式（由key1进入）
+ 158:user_code/GPS.c **** 	else if (state == 1)
+ 713              		.loc 1 158 17
+ 714 0078 7F4B     		ldr	r3, .L33+4
+ 715 007a 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 716              		.loc 1 158 10
+ 717 007c 012B     		cmp	r3, #1
+ 718 007e 4AD1     		bne	.L18
+ 159:user_code/GPS.c **** 	{
+ 160:user_code/GPS.c **** 	    current_ch3 = uart_receiver.channel[2];
+ 719              		.loc 1 160 18
+ 720 0080 7C4B     		ldr	r3, .L33
+ 721 0082 9B88     		ldrh	r3, [r3, #4]	@ movhi
+ 722 0084 ADF80E30 		strh	r3, [sp, #14]	@ movhi
+ 161:user_code/GPS.c **** 	    // 在采集模式下，如果按下遥控器的SWA，则采集一个点
+ 162:user_code/GPS.c **** 	    // 检测通道3状态变化（192->1792或1792->192）
+ 163:user_code/GPS.c ****         if ((last_ch3_state < 1000 && current_ch3 > 1000) ||
+ 723              		.loc 1 163 29
+ 724 0088 814B     		ldr	r3, .L33+28
+ 725 008a 1B88     		ldrh	r3, [r3]
+ 726              		.loc 1 163 12
+ 727 008c B3F57A7F 		cmp	r3, #1000
+ 728 0090 04D2     		bcs	.L19
+ 729              		.loc 1 163 36 discriminator 1
+ 730 0092 BDF80E30 		ldrh	r3, [sp, #14]
+ 731 0096 B3F57A7F 		cmp	r3, #1000
+ 732 009a 09D8     		bhi	.L20
+ 733              	.L19:
+ 164:user_code/GPS.c ****             (last_ch3_state > 1000 && current_ch3 < 1000))
+ 734              		.loc 1 164 29 discriminator 3
+ 735 009c 7C4B     		ldr	r3, .L33+28
+ 736 009e 1B88     		ldrh	r3, [r3]
+ 163:user_code/GPS.c ****             (last_ch3_state > 1000 && current_ch3 < 1000))
+ 737              		.loc 1 163 59 discriminator 3
+ 738 00a0 B3F57A7F 		cmp	r3, #1000
+ 739 00a4 25D9     		bls	.L21
+ 740              		.loc 1 164 36
+ 741 00a6 BDF80E30 		ldrh	r3, [sp, #14]
+ 742 00aa B3F57A7F 		cmp	r3, #1000
+ 743 00ae 20D2     		bcs	.L21
+ 744              	.L20:
+ 165:user_code/GPS.c ****         {
+ 166:user_code/GPS.c ****             // 加入50ms延时防抖
+ 167:user_code/GPS.c ****             zf_delay_ms(50);
+ 745              		.loc 1 167 13
+ 746 00b0 3220     		movs	r0, #50
+ 747 00b2 FFF7FEFF 		bl	zf_delay_ms
+ 168:user_code/GPS.c ****             // 延时后重新读取通道值，确认状态变化稳定
+ 169:user_code/GPS.c ****             current_ch3 = uart_receiver.channel[2];
+ 748              		.loc 1 169 25
+ 749 00b6 6F4B     		ldr	r3, .L33
+ 750 00b8 9B88     		ldrh	r3, [r3, #4]	@ movhi
+ 751 00ba ADF80E30 		strh	r3, [sp, #14]	@ movhi
+ 170:user_code/GPS.c ****             if ((last_ch3_state < 1000 && current_ch3 > 1000) ||
+ 752              		.loc 1 170 33
+ 753 00be 744B     		ldr	r3, .L33+28
+ 754 00c0 1B88     		ldrh	r3, [r3]
+ 755              		.loc 1 170 16
+ 756 00c2 B3F57A7F 		cmp	r3, #1000
+ 757 00c6 04D2     		bcs	.L22
+ 758              		.loc 1 170 40 discriminator 1
+ 759 00c8 BDF80E30 		ldrh	r3, [sp, #14]
+ 760 00cc B3F57A7F 		cmp	r3, #1000
+ 761 00d0 09D8     		bhi	.L23
+ 762              	.L22:
+ 171:user_code/GPS.c ****                 (last_ch3_state > 1000 && current_ch3 < 1000))
+ 763              		.loc 1 171 33 discriminator 3
+ 764 00d2 6F4B     		ldr	r3, .L33+28
+ 765 00d4 1B88     		ldrh	r3, [r3]
+ 170:user_code/GPS.c ****             if ((last_ch3_state < 1000 && current_ch3 > 1000) ||
+ 766              		.loc 1 170 63 discriminator 3
+ 767 00d6 B3F57A7F 		cmp	r3, #1000
+ 768 00da 06D9     		bls	.L24
+ 769              		.loc 1 171 40
+ 770 00dc BDF80E30 		ldrh	r3, [sp, #14]
+ 771 00e0 B3F57A7F 		cmp	r3, #1000
+ 772 00e4 01D2     		bcs	.L24
+ 773              	.L23:
+ 172:user_code/GPS.c ****             {
+ 173:user_code/GPS.c ****                 GPS_GL_GET();  // 状态变化时采集GPS数据
+ 774              		.loc 1 173 17
+ 775 00e6 FFF7FEFF 		bl	GPS_GL_GET
+ 776              	.L24:
+ 174:user_code/GPS.c ****             }
+ 175:user_code/GPS.c ****             last_ch3_state = current_ch3; // 更新状态记录
+ 777              		.loc 1 175 28
+ 778 00ea 694A     		ldr	r2, .L33+28
+ 779 00ec BDF80E30 		ldrh	r3, [sp, #14]	@ movhi
+ 780 00f0 1380     		strh	r3, [r2]	@ movhi
+ 781              	.L21:
+ 176:user_code/GPS.c ****         }
+ 177:user_code/GPS.c **** 	    // 如果按下key3，则退出采集模式
+ 178:user_code/GPS.c **** 	    if (key == KEY_C8_PRES)
+ 782              		.loc 1 178 14
+ 783 00f2 624B     		ldr	r3, .L33+8
+ 784 00f4 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 785              		.loc 1 178 9
+ 786 00f6 032B     		cmp	r3, #3
+ 787 00f8 40F0B780 		bne	.L17
+ 179:user_code/GPS.c **** 	    {
+ 180:user_code/GPS.c **** 	        state = 0; // 回到初始状态
+ 788              		.loc 1 180 16
+ 789 00fc 5E4B     		ldr	r3, .L33+4
+ 790 00fe 0022     		movs	r2, #0
+ 791 0100 1A70     		strb	r2, [r3]
+ 181:user_code/GPS.c **** 	        ips200_clear();
+ 792              		.loc 1 181 10
+ 793 0102 5F48     		ldr	r0, .L33+12
+ 794 0104 FFF7FEFF 		bl	display_interface_clear
+ 182:user_code/GPS.c **** 	        ips200_show_string(0, 0, "exit Sampling mode");
+ 795              		.loc 1 182 10
+ 796 0108 624B     		ldr	r3, .L33+32
+ 797 010a 0022     		movs	r2, #0
+ 798 010c 0021     		movs	r1, #0
+ 799 010e 5C48     		ldr	r0, .L33+12
+ 800 0110 FFF7FEFF 		bl	display_interface_show_string
+ 801 0114 A9E0     		b	.L17
+ 802              	.L18:
+ 183:user_code/GPS.c **** 	    }
+ 184:user_code/GPS.c **** 	}
+ 185:user_code/GPS.c **** 	// 状态2：使用Flash模式（由key2进入）
+ 186:user_code/GPS.c **** 	else if (state == 2)
+ 803              		.loc 1 186 17
+ 804 0116 584B     		ldr	r3, .L33+4
+ 805 0118 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 806              		.loc 1 186 10
+ 807 011a 022B     		cmp	r3, #2
+ 808 011c 40F0A580 		bne	.L17
+ 187:user_code/GPS.c **** 	{
+ 188:user_code/GPS.c **** 	    // 在Flash模式下，如果按下key3，则读取Flash并打印
+ 189:user_code/GPS.c **** 	    if (key == KEY_C8_PRES)
+ 809              		.loc 1 189 14
+ 810 0120 564B     		ldr	r3, .L33+8
+ 811 0122 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 812              		.loc 1 189 9
+ 813 0124 032B     		cmp	r3, #3
+ 814 0126 29D1     		bne	.L25
+ 815              	.LBB4:
+ 190:user_code/GPS.c **** 	    {
+ 191:user_code/GPS.c **** 	        GPS_Flash_use();
+ 816              		.loc 1 191 10
+ 817 0128 FFF7FEFF 		bl	GPS_Flash_use
+ 192:user_code/GPS.c **** 	        int TG = 0;
+ 818              		.loc 1 192 14
+ 819 012c 0023     		movs	r3, #0
+ 820 012e 0593     		str	r3, [sp, #20]
+ 821              	.LBB5:
+ 193:user_code/GPS.c **** 	        for (int data = 0; data <= 20; data++)
+ 822              		.loc 1 193 19
+ 823 0130 0023     		movs	r3, #0
+ 824 0132 0493     		str	r3, [sp, #16]
+ 825              		.loc 1 193 10
+ 826 0134 1FE0     		b	.L26
+ 827              	.L27:
+ 194:user_code/GPS.c **** 	        {
+ 195:user_code/GPS.c **** 	            printf("\r\nzushu-%d,latitude-%f,longitude-%f", data + 1, Target_point[0][TG], Target_
+ 828              		.loc 1 195 14 discriminator 3
+ 829 0136 049B     		ldr	r3, [sp, #16]
+ 830 0138 5C1C     		adds	r4, r3, #1
+ 831 013a 574A     		ldr	r2, .L33+36
+ 832 013c 059B     		ldr	r3, [sp, #20]
+ 833 013e DB00     		lsls	r3, r3, #3
+ 834 0140 1344     		add	r3, r3, r2
+ 835 0142 D3E90001 		ldrd	r0, [r3]
+ 836 0146 544A     		ldr	r2, .L33+36
+ 837 0148 059B     		ldr	r3, [sp, #20]
+ 838 014a 9633     		adds	r3, r3, #150
+ 839 014c DB00     		lsls	r3, r3, #3
+ 840 014e 1344     		add	r3, r3, r2
+ 841 0150 D3E90023 		ldrd	r2, [r3]
+ 842 0154 CDE90023 		strd	r2, [sp]
+ 843 0158 0246     		mov	r2, r0
+ 844 015a 0B46     		mov	r3, r1
+ 845 015c 2146     		mov	r1, r4
+ 846 015e 4F48     		ldr	r0, .L33+40
+ 847 0160 FFF7FEFF 		bl	printf
+ 196:user_code/GPS.c **** 	            zf_delay_ms(50);
+ 848              		.loc 1 196 14 discriminator 3
+ 849 0164 3220     		movs	r0, #50
+ 850 0166 FFF7FEFF 		bl	zf_delay_ms
+ 197:user_code/GPS.c **** 	            TG++; // 下标+1
+ 851              		.loc 1 197 16 discriminator 3
+ 852 016a 059B     		ldr	r3, [sp, #20]
+ 853 016c 0133     		adds	r3, r3, #1
+ 854 016e 0593     		str	r3, [sp, #20]
+ 193:user_code/GPS.c **** 	        {
+ 855              		.loc 1 193 45 discriminator 3
+ 856 0170 049B     		ldr	r3, [sp, #16]
+ 857 0172 0133     		adds	r3, r3, #1
+ 858 0174 0493     		str	r3, [sp, #16]
+ 859              	.L26:
+ 193:user_code/GPS.c **** 	        {
+ 860              		.loc 1 193 10 discriminator 1
+ 861 0176 049B     		ldr	r3, [sp, #16]
+ 862 0178 142B     		cmp	r3, #20
+ 863 017a DCDD     		ble	.L27
+ 864              	.L25:
+ 865              	.LBE5:
+ 866              	.LBE4:
+ 198:user_code/GPS.c **** 	        }
+ 199:user_code/GPS.c **** 	    }
+ 200:user_code/GPS.c **** 	    // 如果按下key4，则退出Flash模式
+ 201:user_code/GPS.c **** 	    if (key == KEY_C7_PRES)
+ 867              		.loc 1 201 14
+ 868 017c 3F4B     		ldr	r3, .L33+8
+ 869 017e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 870              		.loc 1 201 9
+ 871 0180 042B     		cmp	r3, #4
+ 872 0182 72D1     		bne	.L17
+ 202:user_code/GPS.c **** 	    {
+ 203:user_code/GPS.c **** 	        state = 0; // 回到初始状态
+ 873              		.loc 1 203 16
+ 874 0184 3C4B     		ldr	r3, .L33+4
+ 875 0186 0022     		movs	r2, #0
+ 876 0188 1A70     		strb	r2, [r3]
+ 204:user_code/GPS.c **** 	        ips200_clear();
+ 877              		.loc 1 204 10
+ 878 018a 3D48     		ldr	r0, .L33+12
+ 879 018c FFF7FEFF 		bl	display_interface_clear
+ 205:user_code/GPS.c **** 	        zf_delay_ms(5000);
+ 880              		.loc 1 205 10
+ 881 0190 41F28830 		movw	r0, #5000
+ 882 0194 FFF7FEFF 		bl	zf_delay_ms
+ 206:user_code/GPS.c **** 	        virtual_north=gnss_get_two_points_azimuth(gnss_info.latitude,gnss_info.longitude,Target_po
+ 883              		.loc 1 206 24
+ 884 0198 414B     		ldr	r3, .L33+44
+ 885 019a 93ED067B 		vldr.64	d7, [r3, #24]
+ 886 019e 404B     		ldr	r3, .L33+44
+ 887 01a0 93ED086B 		vldr.64	d6, [r3, #32]
+ 888 01a4 3C4B     		ldr	r3, .L33+36
+ 889 01a6 93ED025B 		vldr.64	d5, [r3, #8]
+ 890 01aa 3B4B     		ldr	r3, .L33+36
+ 891 01ac 03F59863 		add	r3, r3, #1216
+ 892 01b0 13ED024B 		vldr.64	d4, [r3, #-8]
+ 893 01b4 B0EE443B 		vmov.f64	d3, d4
+ 894 01b8 B0EE452B 		vmov.f64	d2, d5
+ 895 01bc B0EE461B 		vmov.f64	d1, d6
+ 896 01c0 B0EE470B 		vmov.f64	d0, d7
+ 897 01c4 FFF7FEFF 		bl	gnss_get_two_points_azimuth
+ 898 01c8 B0EE407B 		vmov.f64	d7, d0
+ 899 01cc F7EEC77B 		vcvt.f32.f64	s15, d7
+ 900              		.loc 1 206 23
+ 901 01d0 344B     		ldr	r3, .L33+48
+ 902 01d2 C3ED007A 		vstr.32	s15, [r3]
+ 207:user_code/GPS.c **** 	        initial_imu_heading=current_angles.yaw;
+ 903              		.loc 1 207 44
+ 904 01d6 344B     		ldr	r3, .L33+52
+ 905 01d8 D3ED027A 		vldr.32	s15, [r3, #8]
+ 906 01dc B7EEE77A 		vcvt.f64.f32	d7, s15
+ 907              		.loc 1 207 29
+ 908 01e0 324B     		ldr	r3, .L33+56
+ 909 01e2 83ED007B 		vstr.64	d7, [r3]
+ 208:user_code/GPS.c **** 	        virtual_north=virtual_north-initial_imu_heading;
+ 910              		.loc 1 208 37
+ 911 01e6 2F4B     		ldr	r3, .L33+48
+ 912 01e8 D3ED007A 		vldr.32	s15, [r3]
+ 913 01ec B7EEE76A 		vcvt.f64.f32	d6, s15
+ 914 01f0 2E4B     		ldr	r3, .L33+56
+ 915 01f2 93ED007B 		vldr.64	d7, [r3]
+ 916 01f6 36EE477B 		vsub.f64	d7, d6, d7
+ 917 01fa F7EEC77B 		vcvt.f32.f64	s15, d7
+ 918              		.loc 1 208 23
+ 919 01fe 294B     		ldr	r3, .L33+48
+ 920 0200 C3ED007A 		vstr.32	s15, [r3]
+ 209:user_code/GPS.c **** 	        // 标准化偏移量
+ 210:user_code/GPS.c **** 	        while (virtual_north >= 180.0) virtual_north -= 360.0;
+ 921              		.loc 1 210 16
+ 922 0204 09E0     		b	.L28
+ 923              	.L29:
+ 924              		.loc 1 210 55 discriminator 2
+ 925 0206 274B     		ldr	r3, .L33+48
+ 926 0208 D3ED007A 		vldr.32	s15, [r3]
+ 927 020c 9FED287A 		vldr.32	s14, .L33+60
+ 928 0210 77EEC77A 		vsub.f32	s15, s15, s14
+ 929 0214 234B     		ldr	r3, .L33+48
+ 930 0216 C3ED007A 		vstr.32	s15, [r3]
+ 931              	.L28:
+ 932              		.loc 1 210 31 discriminator 1
+ 933 021a 224B     		ldr	r3, .L33+48
+ 934 021c D3ED007A 		vldr.32	s15, [r3]
+ 935              		.loc 1 210 16 discriminator 1
+ 936 0220 9FED247A 		vldr.32	s14, .L33+64
+ 937 0224 F4EEC77A 		vcmpe.f32	s15, s14
+ 938 0228 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 939 022c EBDA     		bge	.L29
+ 211:user_code/GPS.c **** 	        while (virtual_north <-180.0) virtual_north += 360.0;
+ 940              		.loc 1 211 16
+ 941 022e 09E0     		b	.L30
+ 942              	.L31:
+ 943              		.loc 1 211 54 discriminator 2
+ 944 0230 1C4B     		ldr	r3, .L33+48
+ 945 0232 D3ED007A 		vldr.32	s15, [r3]
+ 946 0236 9FED1E7A 		vldr.32	s14, .L33+60
+ 947 023a 77EE877A 		vadd.f32	s15, s15, s14
+ 948 023e 194B     		ldr	r3, .L33+48
+ 949 0240 C3ED007A 		vstr.32	s15, [r3]
+ 950              	.L30:
+ 951              		.loc 1 211 31 discriminator 1
+ 952 0244 174B     		ldr	r3, .L33+48
+ 953 0246 D3ED007A 		vldr.32	s15, [r3]
+ 954              		.loc 1 211 16 discriminator 1
+ 955 024a 9FED1B7A 		vldr.32	s14, .L33+68
+ 956 024e F4EEC77A 		vcmpe.f32	s15, s14
+ 957 0252 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 958 0256 EBD4     		bmi	.L31
+ 212:user_code/GPS.c **** 	        GL_IMU_Flag=1; // 如果需要设置标志，可以在这里设置
+ 959              		.loc 1 212 21
+ 960 0258 184B     		ldr	r3, .L33+72
+ 961 025a 0122     		movs	r2, #1
+ 962 025c 1A60     		str	r2, [r3]
+ 213:user_code/GPS.c **** 	        right=1;
+ 963              		.loc 1 213 15
+ 964 025e 184B     		ldr	r3, .L33+76
+ 965 0260 0122     		movs	r2, #1
+ 966 0262 1A70     		strb	r2, [r3]
+ 214:user_code/GPS.c **** 	        left = 0;
+ 967              		.loc 1 214 15
+ 968 0264 174B     		ldr	r3, .L33+80
+ 969 0266 0022     		movs	r2, #0
+ 970 0268 1A70     		strb	r2, [r3]
+ 971              	.L17:
+ 215:user_code/GPS.c **** 	    }
+ 216:user_code/GPS.c **** 	}
+ 217:user_code/GPS.c **** 	return state;
+ 972              		.loc 1 217 9
+ 973 026a 034B     		ldr	r3, .L33+4
+ 974 026c 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 218:user_code/GPS.c **** 
+ 219:user_code/GPS.c **** }
+ 975              		.loc 1 219 1
+ 976 026e 1846     		mov	r0, r3
+ 977 0270 06B0     		add	sp, sp, #24
+ 978              		.cfi_def_cfa_offset 8
+ 979              		@ sp needed
+ 980 0272 10BD     		pop	{r4, pc}
+ 981              	.L34:
+ 982              		.align	2
+ 983              	.L33:
+ 984 0274 00000000 		.word	uart_receiver
+ 985 0278 00000000 		.word	state.1
+ 986 027c 00000000 		.word	key
+ 987 0280 00000000 		.word	display_interface_default_obj
+ 988 0284 14000000 		.word	.LC3
+ 989 0288 24000000 		.word	.LC4
+ 990 028c 2C000000 		.word	.LC5
+ 991 0290 00000000 		.word	last_ch3_state.0
+ 992 0294 38000000 		.word	.LC6
+ 993 0298 00000000 		.word	Target_point
+ 994 029c 4C000000 		.word	.LC7
+ 995 02a0 00000000 		.word	gnss_info
+ 996 02a4 00000000 		.word	virtual_north
+ 997 02a8 00000000 		.word	current_angles
+ 998 02ac 00000000 		.word	initial_imu_heading
+ 999 02b0 0000B443 		.word	1135869952
+ 1000 02b4 00003443 		.word	1127481344
+ 1001 02b8 000034C3 		.word	-1020002304
+ 1002 02bc 00000000 		.word	GL_IMU_Flag
+ 1003 02c0 00000000 		.word	right
+ 1004 02c4 00000000 		.word	left
+ 1005              		.cfi_endproc
+ 1006              	.LFE484:
+ 1008              		.section	.rodata
+ 1009              		.align	2
+ 1010              	.LC8:
+ 1011 0070 47505320 		.ascii	"GPS init error! \015\000"
+ 1011      696E6974 
+ 1011      20657272 
+ 1011      6F722120 
+ 1011      0D00
+ 1012              		.section	.text.dlw_gps_init,"ax",%progbits
+ 1013              		.align	1
+ 1014              		.p2align 4,,15
+ 1015              		.global	dlw_gps_init
+ 1016              		.syntax unified
+ 1017              		.thumb
+ 1018              		.thumb_func
+ 1020              	dlw_gps_init:
+ 1021              	.LFB485:
+ 220:user_code/GPS.c **** 
+ 221:user_code/GPS.c **** void dlw_gps_init(void)
+ 222:user_code/GPS.c **** {
+ 1022              		.loc 1 222 1
+ 1023              		.cfi_startproc
+ 1024              		@ args = 0, pretend = 0, frame = 0
+ 1025              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1026 0000 08B5     		push	{r3, lr}
+ 1027              		.cfi_def_cfa_offset 8
+ 1028              		.cfi_offset 3, -8
+ 1029              		.cfi_offset 14, -4
+ 223:user_code/GPS.c ****     if(gnss_init(GNSS_TYPE_GN43RFA))
+ 1030              		.loc 1 223 8
+ 1031 0002 0220     		movs	r0, #2
+ 1032 0004 FFF7FEFF 		bl	gnss_init
+ 1033 0008 0346     		mov	r3, r0
+ 1034              		.loc 1 223 7
+ 1035 000a 002B     		cmp	r3, #0
+ 1036 000c 02D0     		beq	.L37
+ 224:user_code/GPS.c ****     {
+ 225:user_code/GPS.c ****         printf("GPS init error! \r\n");
+ 1037              		.loc 1 225 9
+ 1038 000e 0248     		ldr	r0, .L38
+ 1039 0010 FFF7FEFF 		bl	puts
+ 1040              	.L37:
+ 226:user_code/GPS.c ****     }
+ 227:user_code/GPS.c **** }
+ 1041              		.loc 1 227 1
+ 1042 0014 00BF     		nop
+ 1043 0016 08BD     		pop	{r3, pc}
+ 1044              	.L39:
+ 1045              		.align	2
+ 1046              	.L38:
+ 1047 0018 70000000 		.word	.LC8
+ 1048              		.cfi_endproc
+ 1049              	.LFE485:
+ 1051              		.section	.bss.NUM.2,"aw",%nobits
+ 1052              		.align	2
+ 1055              	NUM.2:
+ 1056 0000 00000000 		.space	4
+ 1057              		.section	.bss.state.1,"aw",%nobits
+ 1060              	state.1:
+ 1061 0000 00       		.space	1
+ 1062              		.section	.bss.last_ch3_state.0,"aw",%nobits
+ 1063              		.align	1
+ 1066              	last_ch3_state.0:
+ 1067 0000 0000     		.space	2
+ 1068              		.text
+ 1069              	.Letext0:
+ 1070              		.file 2 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 1071              		.file 3 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 1072              		.file 4 "libraries/zf_common/zf_common_typedef.h"
+ 1073              		.file 5 "C:/StellarStudio-7.0/SDKS/StellarESDK-1.7.0/Modules/Platform/MCU/include/sr5e1/sr5e1xx.h"
+ 1074              		.file 6 "libraries/zf_driver/zf_driver_gpio.h"
+ 1075              		.file 7 "libraries/zf_driver/zf_driver_adc.h"
+ 1076              		.file 8 "libraries/zf_driver/zf_driver_can.h"
+ 1077              		.file 9 "libraries/zf_driver/zf_driver_encoder.h"
+ 1078              		.file 10 "libraries/zf_driver/zf_driver_exti.h"
+ 1079              		.file 11 "libraries/zf_driver/zf_driver_flash.h"
+ 1080              		.file 12 "libraries/zf_driver/zf_driver_hrtim.h"
+ 1081              		.file 13 "libraries/zf_driver/zf_driver_pwm.h"
+ 1082              		.file 14 "libraries/zf_driver/zf_driver_spi.h"
+ 1083              		.file 15 "libraries/zf_driver/zf_driver_uart.h"
+ 1084              		.file 16 "libraries/zf_device/zf_device_imu_interface.h"
+ 1085              		.file 17 "libraries/zf_device/zf_device_wireless_interface.h"
+ 1086              		.file 18 "libraries/zf_device/zf_device_display_interface.h"
+ 1087              		.file 19 "libraries/zf_device/zf_device_gnss.h"
+ 1088              		.file 20 "libraries/zf_device/zf_device_uart_receiver.h"
+ 1089              		.file 21 "user_code/quaternion.h"
+ 1090              		.file 22 "user_code/GPS.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 GPS.c
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:23     .data.RP_MAX:00000000 RP_MAX
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:20     .data.RP_MAX:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:30     .bss.GL_NUM:00000000 GL_NUM
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:27     .bss.GL_NUM:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:37     .bss.Target_point:00000000 Target_point
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:34     .bss.Target_point:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:44     .bss.Work_target_array:00000000 Work_target_array
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:41     .bss.Work_target_array:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:51     .bss.lat:00000000 lat
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:48     .bss.lat:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:58     .bss.lot:00000000 lot
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:55     .bss.lot:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:65     .bss.I_lat:00000000 I_lat
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:62     .bss.I_lat:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:72     .bss.F_lat:00000000 F_lat
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:69     .bss.F_lat:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:79     .bss.I_lot:00000000 I_lot
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:76     .bss.I_lot:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:86     .bss.F_lot:00000000 F_lot
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:83     .bss.F_lot:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:93     .bss.Number:00000000 Number
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:90     .bss.Number:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:100    .bss.GL_IMU_Flag:00000000 GL_IMU_Flag
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:97     .bss.GL_IMU_Flag:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:107    .bss.virtual_north:00000000 virtual_north
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:104    .bss.virtual_north:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:114    .bss.initial_imu_heading:00000000 initial_imu_heading
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:111    .bss.initial_imu_heading:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:117    .rodata:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:127    .text.GPS_GL_GET:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:134    .text.GPS_GL_GET:00000000 GPS_GL_GET
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:460    .text.GPS_GL_GET:00000278 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1055   .bss.NUM.2:00000000 NUM.2
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:480    .text.GPS_Flash_use:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:487    .text.GPS_Flash_use:00000000 GPS_Flash_use
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:601    .text.GPS_Flash_use:000000ac $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:623    .text.GL_CRC:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:630    .text.GL_CRC:00000000 GL_CRC
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:984    .text.GL_CRC:00000274 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1060   .bss.state.1:00000000 state.1
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1066   .bss.last_ch3_state.0:00000000 last_ch3_state.0
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1013   .text.dlw_gps_init:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1020   .text.dlw_gps_init:00000000 dlw_gps_init
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1047   .text.dlw_gps_init:00000018 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1052   .bss.NUM.2:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1061   .bss.state.1:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccIk25Fq.s:1063   .bss.last_ch3_state.0:00000000 $d
+                           .group:00000000 wm4.0.1ea29c7543256e0887205fa7f8c557c8
+                           .group:00000000 wm4._newlib_version.h.4.bfdf54b0af045d4a71376ae00f63a22c
+                           .group:00000000 wm4.newlib.h.18.1c9fedb6b3cd797cff253cc0fd593ef2
+                           .group:00000000 wm4.ieeefp.h.77.2bc94c1d1ed8b02df437510a04ac1e45
+                           .group:00000000 wm4.features.h.22.026edb2397769f4ae13f35900dbdb560
+                           .group:00000000 wm4.config.h.224.c701144a7b0518c6ee9b9b5465b79f81
+                           .group:00000000 wm4._ansi.h.31.de524f58584151836e90d8620a16f8e8
+                           .group:00000000 wm4.stdio.h.31.7c0e28c411445f3f9c5b11accf882760
+                           .group:00000000 wm4._default_types.h.6.959254cf5f09734ea7516c89e8bb21bd
+                           .group:00000000 wm4.stddef.h.181.c3f52a3b0f4c288bddb5dda1562858e2
+                           .group:00000000 wm4.cdefs.h.49.a54b2d5c07711bc7320a3fea9f12cb56
+                           .group:00000000 wm4.stddef.h.39.c161261b198ee3a963897077fd6fa59f
+                           .group:00000000 wm4.stdarg.h.34.3a23a216c0c293b3d2ea2e89281481e6
+                           .group:00000000 wm4._types.h.20.dd0d04dca3800a0d2a6129b87f3adbb2
+                           .group:00000000 wm4.stddef.h.155.3588ebfdd1e8c7ede80509bb9c3b8009
+                           .group:00000000 wm4._types.h.127.34941de1b2539d59d5cac00e0dd27a45
+                           .group:00000000 wm4.reent.h.17.e292bf8b0bec6c96e131a54347145a30
+                           .group:00000000 wm4.lock.h.2.1461d1fff82dffe8bfddc23307f6484f
+                           .group:00000000 wm4.reent.h.77.dcd6129ff07fe81bd5636db29abe53b2
+                           .group:00000000 wm4.types.h.40.8b6acba56cefbb11746718204edc8f5e
+                           .group:00000000 wm4._stdint.h.10.c24fa3af3bc1706662bb5593a907e841
+                           .group:00000000 wm4._endian.h.31.65a10590763c3dde1ac4a7f66d7d4891
+                           .group:00000000 wm4.endian.h.9.49f3a4695c1b61e8a0808de3c4a106cb
+                           .group:00000000 wm4._timeval.h.32.bec3221fa7a9bb0bdde696c9c57e47d2
+                           .group:00000000 wm4.timespec.h.41.d855182eb0e690443ab8651bcedca6e1
+                           .group:00000000 wm4.select.h.19.40cd3f2bfc456b193b790c2754690ebf
+                           .group:00000000 wm4.types.h.51.5571ec98f267d17d3c670b7a3ba33afa
+                           .group:00000000 wm4.sched.h.22.c60982713a5c428609783c78f9c78d95
+                           .group:00000000 wm4._pthreadtypes.h.36.fcee9961c35163dde6267ef772ad1972
+                           .group:00000000 wm4.stdio.h.2.4aa87247282eca6c8f36f9de33d8df1a
+                           .group:00000000 wm4.stdio.h.81.932d0c162786b883f622b8d05c120c78
+                           .group:00000000 wm4._intsup.h.10.48bafbb683905c4daa4565a85aeeb264
+                           .group:00000000 wm4.stdint.h.23.d53047a68f4a85177f80b422d52785ed
+                           .group:00000000 wm4.string.h.8.c4b8571ce60dff2817f43fec8b86aecd
+                           .group:00000000 wm4.stddef.h.155.ba788add86a0e365f264484f110c3c29
+                           .group:00000000 wm4.sr5e1xx.h.22.e5c808533cc52ed19fb0830cd7d98924
+                           .group:00000000 wm4.cmsis_version.h.32.0f826810625204eca22a19868bdc7586
+                           .group:00000000 wm4.core_cm7.h.66.8ab2de36917d6fcae18019067fda13e0
+                           .group:00000000 wm4.cmsis_gcc.h.26.498d0ad17a45fc9ef20fdc01caf02259
+                           .group:00000000 wm4.core_cm7.h.174.43edb295ecdaadad738f48ba6011ffad
+                           .group:00000000 wm4.mpu_armv7.h.32.83326921a797fa9d6f70449916b4b839
+                           .group:00000000 wm4.cachel1_armv7.h.32.abd77761a989e008b0c60891114a33c7
+                           .group:00000000 wm4.SR5E1_ADC.h.14.21608e6aff125ba995dd767d6d8dc311
+                           .group:00000000 wm4.SR5E1_CEM.h.14.01fe5742c8f1ae35b1f3af05932f702e
+                           .group:00000000 wm4.SR5E1_CMU.h.14.2617b38b159abe38028862394531e06d
+                           .group:00000000 wm4.SR5E1_COMP.h.14.4b6fdfe4f5f7fd9bedf3a99b98bdf4cd
+                           .group:00000000 wm4.SR5E1_CORDIC.h.14.354fbf7c9eaf6963d38eaa25cf28ffe8
+                           .group:00000000 wm4.SR5E1_CRC.h.14.c64d0f7767671ddb92e9ead0a1162100
+                           .group:00000000 wm4.SR5E1_DAC.h.14.8c26a0ff04b0cfeb55306cc3f22187b8
+                           .group:00000000 wm4.SR5E1_DBGMCU.h.14.427df893d53a8044654f017ba01c25ed
+                           .group:00000000 wm4.SR5E1_DMA.h.14.a7f9a92f844b40a86965798c2e64240b
+                           .group:00000000 wm4.SR5E1_DMAMUX.h.14.471b3b4dfd4d41515f1df49493698866
+                           .group:00000000 wm4.SR5E1_EXTI.h.14.a325ea3fe89cd84894660551c33241ea
+                           .group:00000000 wm4.SR5E1_FCCU.h.14.0ebf0f0f36e079d28613ad2c80e17e23
+                           .group:00000000 wm4.SR5E1_FDCAN.h.14.ac57101fad5dbc798bfb93f34c899de7
+                           .group:00000000 wm4.SR5E1_FLASH_REG_ITF.h.14.d23d1d44923f9b20b8c8fdb51d66aefd
+                           .group:00000000 wm4.SR5E1_GPIO.h.14.1c84071e130d7c64b62470ab0e18a1f1
+                           .group:00000000 wm4.SR5E1_HRTIM.h.24.03932387d2522e6bd5c772a4edaf2f5d
+                           .group:00000000 wm4.SR5E1_HSEM.h.14.cbe70eee519f01b16452c3f8c99d8df1
+                           .group:00000000 wm4.SR5E1_I2C.h.14.350ba3e0f4fd57828457efa80135c36c
+                           .group:00000000 wm4.SR5E1_IMA.h.14.62b7088985ab2b7ce9b030a02daa1f7d
+                           .group:00000000 wm4.SR5E1_IWDG.h.14.20b7c5f05cf7ae94464c360d7af3660d
+                           .group:00000000 wm4.SR5E1_MEMU.h.14.04bad7ae4c52ce334a4fc900aad2ae5b
+                           .group:00000000 wm4.SR5E1_NVM_CTRL.h.14.5f442617f0628d4f16258f211c614ef9
+                           .group:00000000 wm4.SR5E1_PLLDIG.h.14.bd87a8e6917eee17dae2f312c8e5fa53
+                           .group:00000000 wm4.SR5E1_PMC_DIG.h.14.54173b566c6656344766ec4ef46c9281
+                           .group:00000000 wm4.SR5E1_RCC.h.14.56734803c71534de286e793a53649740
+                           .group:00000000 wm4.SR5E1_RTC.h.14.47037cbc7d8175dbf2be1dc0bb955e3f
+                           .group:00000000 wm4.SR5E1_SD_ADC.h.14.552b97d0b8f3c1fd4df6d8964b2f1a80
+                           .group:00000000 wm4.SR5E1_SMPU.h.14.8ce5bb6d5d7c579cd725f492f46e9085
+                           .group:00000000 wm4.SR5E1_SPI.h.14.42d52112e540f85ade4d9135f8b87d72
+                           .group:00000000 wm4.SR5E1_SSCM.h.14.8e6a2ad0ce5fca422fc3d69939b6125b
+                           .group:00000000 wm4.SR5E1_SYSCFG.h.14.02b969490118ce4069914b5e94f7ca65
+                           .group:00000000 wm4.SR5E1_TDM.h.14.a40ed7928cad243a57fd233fccf01ad2
+                           .group:00000000 wm4.SR5E1_TIM.h.14.f17572f4c16f3f152b8164ad25c34f5b
+                           .group:00000000 wm4.SR5E1_UART.h.14.eec3ab82b02b3bdb3de500483675b83f
+                           .group:00000000 wm4.SR5E1_WWDG.h.14.59b45efc70e442cc6ef03702aad4ad88
+                           .group:00000000 wm4.stdbool.h.29.07dce69c3b78884144b7f7bd19483461
+                           .group:00000000 wm4.typedefs.h.36.07fe3956b4e751037cfee70edcd0b397
+                           .group:00000000 wm4.irq_numbers.h.38.6294b95aed1bf7b3a2cda0eed8ce8f57
+                           .group:00000000 wm4.regs.h.23.2ac145b4f57126d16daed5fbd86d99c6
+                           .group:00000000 wm4.stdarg.h.31.3fa7b8f6daaa31edd1696c08c77f2a73
+                           .group:00000000 wm4.stdlib.h.13.4ed386f5c1a80d71e72172885d946ef2
+                           .group:00000000 wm4.alloca.h.8.dfc0c703c47ec3e69746825b17d9e66d
+                           .group:00000000 wm4.stdlib.h.56.f4862cfbf4363a1db01842d5bdf72c18
+                           .group:00000000 wm4.zf_common_typedef.h.47.8c368673885c9d07221c267e15ab1069
+                           .group:00000000 wm4.zf_common_debug.h.33.ccdd5203a5e510a964ba4c22faca44c8
+                           .group:00000000 wm4.zf_common_fifo.h.33.e14e643902e26e4e65437b5b20e82793
+                           .group:00000000 wm4.zf_common_function.h.33.02bbfb055e8ee322bc4f8b14ea195da2
+                           .group:00000000 wm4.zf_common_memory.h.33.d43647290a4d62164ff2ec77cadb89d8
+                           .group:00000000 wm4.saradc.h.25.e5a70aef9ec4fddf35f2b7cc0c9cf1bc
+                           .group:00000000 wm4.gpio.h.25.d41a0c19fda8c2de42e666afb48ec15a
+                           .group:00000000 wm4.zf_driver_gpio.h.65.5a4d2084c62fed7c22fdca02e748c198
+                           .group:00000000 wm4.zf_driver_adc.h.64.349fb433626b42172b0e0fee038428ca
+                           .group:00000000 wm4.can.h.25.3cfccb6c630ada4f656cab597e231e58
+                           .group:00000000 wm4.dmamux.h.25.337aea179f6dbcc87c52aae26d38f76e
+                           .group:00000000 wm4.clock_cfg.h.24.0aed3cee9ecce947225a304181294191
+                           .group:00000000 wm4.clock.h.37.80236c5607fdd9eb9275e5111a4191c3
+                           .group:00000000 wm4.irq.h.37.78714f25754c8b09d1428599101f6cc7
+                           .group:00000000 wm4.dma.h.40.f77dd217a06ceba13a3cfdd4102a73c1
+                           .group:00000000 wm4.zf_driver_can.h.67.fd10d2fa867eb54a54d4b57027d73a60
+                           .group:00000000 wm4.tim.h.25.6e7ad96569e77a70a68b9b4cc59f54f2
+                           .group:00000000 wm4.zf_driver_timer.h.33.8df253b6990d9861816977209fb11e90
+                           .group:00000000 wm4.zf_driver_encoder.h.57.7e32999f25354fac086ca226b0c630d4
+                           .group:00000000 wm4.exti.h.25.21597c35d9630b0985ce88d2c41f4ea4
+                           .group:00000000 wm4.zf_driver_exti.h.59.1b02b8083e5295ef5baaf83905d59395
+                           .group:00000000 wm4.ssd_types.h.29.b861f4e6d39d333f931bfc05b964cb1c
+                           .group:00000000 wm4.ssd_C55.h.37.dad650468a97d71aff4dd65ca085590f
+                           .group:00000000 wm4.zf_driver_flash.h.59.db93fe574c35ea9e79030063fbb35a13
+                           .group:00000000 wm4.hrtim.h.25.1601aea9d4a0da1de8252dc444355251
+                           .group:00000000 wm4.zf_driver_hrtim.h.64.cd8d2bf3bf1c471ea59d9c61e4a721d7
+                           .group:00000000 wm4.zf_driver_interrupt.h.33.2c3660dcc36cb090bd75b8f180c14f27
+                           .group:00000000 wm4.zf_driver_pit.h.33.834ac720a62e09d5603a9557331e9049
+                           .group:00000000 wm4.zf_driver_pwm.h.33.7d80487064ca712231a453396685a551
+                           .group:00000000 wm4.zf_driver_rcc.h.33.4c228cf40a79e1b974b30d5a9a3a77a7
+                           .group:00000000 wm4.zf_driver_soft_iic.h.33.9067bd298084134f63c61c075f95fa2b
+                           .group:00000000 wm4.zf_driver_soft_spi.h.33.a938287c023905d97cafe56e4be63674
+                           .group:00000000 wm4.zf_driver_spi.h.62.950b1f52ed365034df2907601137b455
+                           .group:00000000 wm4.zf_driver_system.h.33.370922a9681b47d575d2c83d302a180b
+                           .group:00000000 wm4.zf_driver_uart.h.70.ffcf3694337ad0b4066179f1abd5d668
+                           .group:00000000 wm4.zf_device_imu_interface.h.40.344a2c93b973b58cee305ff406fc3e84
+                           .group:00000000 wm4.zf_device_imu660rb.h.37.b47c39afb47c89c2c82bd28e76457042
+                           .group:00000000 wm4.zf_device_imu963ra.h.37.e773f164af6f72dd1b0b6c1242bf99b4
+                           .group:00000000 wm4.zf_device_wireless_interface.h.40.da0a07f107014cb0888a26f281971a5b
+                           .group:00000000 wm4.zf_device_display_interface.h.79.d8df25e52245efbd97fd6415c8db0a72
+                           .group:00000000 wm4.zf_device_ips200.h.37.957fc5e8b291701a6f6b47207b045b77
+                           .group:00000000 wm4.math.h.13.b6595ad277a643a6127e1a4515a98f91
+                           .group:00000000 wm4.zf_device_gnss.h.66.39fe53860d2d190725612db126de8287
+                           .group:00000000 wm4.zf_device_key.h.45.b12f9096d8cc68f085b8fe9fe5b730db
+                           .group:00000000 wm4.zf_device_uart_receiver.h.43.9ac9496dcaa4780ef86d21fa439379b4
+                           .group:00000000 wm4.servo.h.9.527c6b66c6bfd7e85b3aa357b7b41a9a
+                           .group:00000000 wm4.key.h.15.a62367548c3fda3e4e7a36cd730b6143
+                           .group:00000000 wm4.quaternion.h.15.d2ef326a4e7ac21d4b5d449e696cdef0
+
+UNDEFINED SYMBOLS
+display_interface_clear
+display_interface_show_string
+display_interface_show_uint
+display_interface_show_float
+zf_flash_check_page
+zf_flash_erase_page
+zf_flash_write_page_from_buffer
+gnss_info
+display_interface_default_obj
+flash_union_buffer
+zf_flash_buffer_clear
+zf_flash_read_page_to_buffer
+zf_delay_ms
+printf
+gnss_get_two_points_azimuth
+uart_receiver
+key
+current_angles
+right
+left
+gnss_init
+puts

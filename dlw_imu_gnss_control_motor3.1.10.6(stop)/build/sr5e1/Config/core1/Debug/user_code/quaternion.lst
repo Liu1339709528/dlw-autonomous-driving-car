@@ -1,0 +1,900 @@
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"quaternion.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.global	qt_filter
+  19              		.section	.bss.qt_filter,"aw",%nobits
+  20              		.align	2
+  23              	qt_filter:
+  24 0000 00000000 		.space	40
+  24      00000000 
+  24      00000000 
+  24      00000000 
+  24      00000000 
+  25              		.section	.text.quaternion_init,"ax",%progbits
+  26              		.align	1
+  27              		.p2align 4,,15
+  28              		.global	quaternion_init
+  29              		.syntax unified
+  30              		.thumb
+  31              		.thumb_func
+  33              	quaternion_init:
+  34              	.LFB482:
+  35              		.file 1 "user_code/quaternion.c"
+   1:user_code/quaternion.c **** /*
+   2:user_code/quaternion.c ****  * quaternion.c
+   3:user_code/quaternion.c ****  *
+   4:user_code/quaternion.c ****  *  Created on: 2025年6月16日
+   5:user_code/quaternion.c ****  *      Author: 86155
+   6:user_code/quaternion.c ****  */
+   7:user_code/quaternion.c **** 
+   8:user_code/quaternion.c **** #include "quaternion.h"
+   9:user_code/quaternion.c **** 
+  10:user_code/quaternion.c **** quaternionFilter qt_filter = {0};
+  11:user_code/quaternion.c **** 
+  12:user_code/quaternion.c **** //-------------------------------------------------------------------------------------------------
+  13:user_code/quaternion.c **** // 函数简介     四元数初始化
+  14:user_code/quaternion.c **** // 参数说明     void
+  15:user_code/quaternion.c **** // 返回参数     void
+  16:user_code/quaternion.c **** // 使用示例
+  17:user_code/quaternion.c **** // 备注信息
+  18:user_code/quaternion.c **** //-------------------------------------------------------------------------------------------------
+  19:user_code/quaternion.c **** void quaternion_init(void)
+  20:user_code/quaternion.c **** {
+  36              		.loc 1 20 1
+  37              		.cfi_startproc
+  38              		@ args = 0, pretend = 0, frame = 0
+  39              		@ frame_needed = 0, uses_anonymous_args = 0
+  40              		@ link register save eliminated.
+  21:user_code/quaternion.c ****     // 初始化为单位四元数
+  22:user_code/quaternion.c ****     qt_filter.quat.q0 = 1.0f;
+  41              		.loc 1 22 23
+  42 0000 0D4B     		ldr	r3, .L2
+  43 0002 4FF07E52 		mov	r2, #1065353216
+  44 0006 1A60     		str	r2, [r3]	@ float
+  23:user_code/quaternion.c ****     qt_filter.quat.q1 = 0.0f;
+  45              		.loc 1 23 23
+  46 0008 0B4B     		ldr	r3, .L2
+  47 000a 4FF00002 		mov	r2, #0
+  48 000e 5A60     		str	r2, [r3, #4]	@ float
+  24:user_code/quaternion.c ****     qt_filter.quat.q2 = 0.0f;
+  49              		.loc 1 24 23
+  50 0010 094B     		ldr	r3, .L2
+  51 0012 4FF00002 		mov	r2, #0
+  52 0016 9A60     		str	r2, [r3, #8]	@ float
+  25:user_code/quaternion.c ****     qt_filter.quat.q3 = 0.0f;
+  53              		.loc 1 25 23
+  54 0018 074B     		ldr	r3, .L2
+  55 001a 4FF00002 		mov	r2, #0
+  56 001e DA60     		str	r2, [r3, #12]	@ float
+  26:user_code/quaternion.c **** 
+  27:user_code/quaternion.c ****     // madgwick滤波器参数 (根据实际调整)
+  28:user_code/quaternion.c ****     qt_filter.beta = MADGWICK_PARAMETERS;
+  57              		.loc 1 28 20
+  58 0020 054B     		ldr	r3, .L2
+  59 0022 064A     		ldr	r2, .L2+4
+  60 0024 1A62     		str	r2, [r3, #32]	@ float
+  29:user_code/quaternion.c **** 
+  30:user_code/quaternion.c ****     // 采样周期 (与PIT中断周期一致)
+  31:user_code/quaternion.c ****     qt_filter.sample_period = 0.005f; // 5ms
+  61              		.loc 1 31 29
+  62 0026 044B     		ldr	r3, .L2
+  63 0028 054A     		ldr	r2, .L2+8
+  64 002a 5A62     		str	r2, [r3, #36]	@ float
+  32:user_code/quaternion.c **** 
+  33:user_code/quaternion.c ****     // 初始化校准状态
+  34:user_code/quaternion.c ****     qt_filter.euler.calibrated = 0;
+  65              		.loc 1 34 32
+  66 002c 024B     		ldr	r3, .L2
+  67 002e 0022     		movs	r2, #0
+  68 0030 1A77     		strb	r2, [r3, #28]
+  35:user_code/quaternion.c **** 
+  36:user_code/quaternion.c **** }
+  69              		.loc 1 36 1
+  70 0032 00BF     		nop
+  71 0034 7047     		bx	lr
+  72              	.L3:
+  73 0036 00BF     		.align	2
+  74              	.L2:
+  75 0038 00000000 		.word	qt_filter
+  76 003c CDCCCC3D 		.word	1036831949
+  77 0040 0AD7A33B 		.word	1000593162
+  78              		.cfi_endproc
+  79              	.LFE482:
+  81              		.section	.text.quaternion_update,"ax",%progbits
+  82              		.align	1
+  83              		.p2align 4,,15
+  84              		.global	quaternion_update
+  85              		.syntax unified
+  86              		.thumb
+  87              		.thumb_func
+  89              	quaternion_update:
+  90              	.LFB483:
+  37:user_code/quaternion.c **** 
+  38:user_code/quaternion.c **** //-------------------------------------------------------------------------------------------------
+  39:user_code/quaternion.c **** // 函数简介     四元数更新函数
+  40:user_code/quaternion.c **** // 参数说明     ax                      加速度计x轴
+  41:user_code/quaternion.c **** // 参数说明     ay                      加速度计y轴
+  42:user_code/quaternion.c **** // 参数说明     az                      加速度计z轴
+  43:user_code/quaternion.c **** // 参数说明     gx                      陀螺仪x轴
+  44:user_code/quaternion.c **** // 参数说明     gy                      陀螺仪y轴
+  45:user_code/quaternion.c **** // 参数说明     gz                      陀螺仪z轴
+  46:user_code/quaternion.c **** // 返回参数     void
+  47:user_code/quaternion.c **** // 使用示例
+  48:user_code/quaternion.c **** // 备注信息     此函数在定时器中断中实时更新四元数
+  49:user_code/quaternion.c **** //-------------------------------------------------------------------------------------------------
+  50:user_code/quaternion.c **** void quaternion_update(float ax, float ay, float az, float gx, float gy, float gz)
+  51:user_code/quaternion.c **** {
+  91              		.loc 1 51 1
+  92              		.cfi_startproc
+  93              		@ args = 0, pretend = 0, frame = 48
+  94              		@ frame_needed = 0, uses_anonymous_args = 0
+  95 0000 00B5     		push	{lr}
+  96              		.cfi_def_cfa_offset 4
+  97              		.cfi_offset 14, -4
+  98 0002 8DB0     		sub	sp, sp, #52
+  99              		.cfi_def_cfa_offset 56
+ 100 0004 8DED050A 		vstr.32	s0, [sp, #20]
+ 101 0008 CDED040A 		vstr.32	s1, [sp, #16]
+ 102 000c 8DED031A 		vstr.32	s2, [sp, #12]
+ 103 0010 CDED021A 		vstr.32	s3, [sp, #8]
+ 104 0014 8DED012A 		vstr.32	s4, [sp, #4]
+ 105 0018 CDED002A 		vstr.32	s5, [sp]
+  52:user_code/quaternion.c ****     static float last_gx = 0, last_gy = 0, last_gz = 0;
+  53:user_code/quaternion.c ****     // 获取陀螺仪数据 (转换为弧度/秒)
+  54:user_code/quaternion.c ****     gx *= M_PI / 180.0f;
+ 106              		.loc 1 54 8
+ 107 001c DDED027A 		vldr.32	s15, [sp, #8]
+ 108 0020 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 109 0024 9FEDA86B 		vldr.64	d6, .L5
+ 110 0028 27EE067B 		vmul.f64	d7, d7, d6
+ 111 002c F7EEC77B 		vcvt.f32.f64	s15, d7
+ 112 0030 CDED027A 		vstr.32	s15, [sp, #8]
+  55:user_code/quaternion.c ****     gy *= M_PI / 180.0f;
+ 113              		.loc 1 55 8
+ 114 0034 DDED017A 		vldr.32	s15, [sp, #4]
+ 115 0038 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 116 003c 9FEDA26B 		vldr.64	d6, .L5
+ 117 0040 27EE067B 		vmul.f64	d7, d7, d6
+ 118 0044 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 119 0048 CDED017A 		vstr.32	s15, [sp, #4]
+  56:user_code/quaternion.c ****     gz *= M_PI / 180.0f;
+ 120              		.loc 1 56 8
+ 121 004c DDED007A 		vldr.32	s15, [sp]
+ 122 0050 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 123 0054 9FED9C6B 		vldr.64	d6, .L5
+ 124 0058 27EE067B 		vmul.f64	d7, d7, d6
+ 125 005c F7EEC77B 		vcvt.f32.f64	s15, d7
+ 126 0060 CDED007A 		vstr.32	s15, [sp]
+  57:user_code/quaternion.c **** 
+  58:user_code/quaternion.c ****     // 低通滤波：gyro = factor * new + (1-factor) * old
+  59:user_code/quaternion.c ****     gx = GYRO_LPF_FACTOR * gx + (1 - GYRO_LPF_FACTOR) * last_gx;
+ 127              		.loc 1 59 26
+ 128 0064 DDED027A 		vldr.32	s15, [sp, #8]
+ 129 0068 9FED997A 		vldr.32	s14, .L5+8
+ 130 006c 27EE877A 		vmul.f32	s14, s15, s14
+ 131              		.loc 1 59 55
+ 132 0070 984B     		ldr	r3, .L5+12
+ 133 0072 D3ED007A 		vldr.32	s15, [r3]
+ 134 0076 DFED986A 		vldr.32	s13, .L5+16
+ 135 007a 67EEA67A 		vmul.f32	s15, s15, s13
+ 136              		.loc 1 59 8
+ 137 007e 77EE277A 		vadd.f32	s15, s14, s15
+ 138 0082 CDED027A 		vstr.32	s15, [sp, #8]
+  60:user_code/quaternion.c ****     gy = GYRO_LPF_FACTOR * gy + (1 - GYRO_LPF_FACTOR) * last_gy;
+ 139              		.loc 1 60 26
+ 140 0086 DDED017A 		vldr.32	s15, [sp, #4]
+ 141 008a 9FED917A 		vldr.32	s14, .L5+8
+ 142 008e 27EE877A 		vmul.f32	s14, s15, s14
+ 143              		.loc 1 60 55
+ 144 0092 924B     		ldr	r3, .L5+20
+ 145 0094 D3ED007A 		vldr.32	s15, [r3]
+ 146 0098 DFED8F6A 		vldr.32	s13, .L5+16
+ 147 009c 67EEA67A 		vmul.f32	s15, s15, s13
+ 148              		.loc 1 60 8
+ 149 00a0 77EE277A 		vadd.f32	s15, s14, s15
+ 150 00a4 CDED017A 		vstr.32	s15, [sp, #4]
+  61:user_code/quaternion.c ****     gz = GYRO_LPF_FACTOR * gz + (1 - GYRO_LPF_FACTOR) * last_gz;
+ 151              		.loc 1 61 26
+ 152 00a8 DDED007A 		vldr.32	s15, [sp]
+ 153 00ac 9FED887A 		vldr.32	s14, .L5+8
+ 154 00b0 27EE877A 		vmul.f32	s14, s15, s14
+ 155              		.loc 1 61 55
+ 156 00b4 8A4B     		ldr	r3, .L5+24
+ 157 00b6 D3ED007A 		vldr.32	s15, [r3]
+ 158 00ba DFED876A 		vldr.32	s13, .L5+16
+ 159 00be 67EEA67A 		vmul.f32	s15, s15, s13
+ 160              		.loc 1 61 8
+ 161 00c2 77EE277A 		vadd.f32	s15, s14, s15
+ 162 00c6 CDED007A 		vstr.32	s15, [sp]
+  62:user_code/quaternion.c **** 
+  63:user_code/quaternion.c ****     last_gx = gx;
+ 163              		.loc 1 63 13
+ 164 00ca 824A     		ldr	r2, .L5+12
+ 165 00cc 029B     		ldr	r3, [sp, #8]	@ float
+ 166 00ce 1360     		str	r3, [r2]	@ float
+  64:user_code/quaternion.c ****     last_gy = gy;
+ 167              		.loc 1 64 13
+ 168 00d0 824A     		ldr	r2, .L5+20
+ 169 00d2 019B     		ldr	r3, [sp, #4]	@ float
+ 170 00d4 1360     		str	r3, [r2]	@ float
+  65:user_code/quaternion.c ****     last_gz = gz;
+ 171              		.loc 1 65 13
+ 172 00d6 824A     		ldr	r2, .L5+24
+ 173 00d8 009B     		ldr	r3, [sp]	@ float
+ 174 00da 1360     		str	r3, [r2]	@ float
+  66:user_code/quaternion.c **** 
+  67:user_code/quaternion.c ****     float q0 = qt_filter.quat.q0;
+ 175              		.loc 1 67 11
+ 176 00dc 814B     		ldr	r3, .L5+28
+ 177 00de 1B68     		ldr	r3, [r3]	@ float
+ 178 00e0 0B93     		str	r3, [sp, #44]	@ float
+  68:user_code/quaternion.c ****     float q1 = qt_filter.quat.q1;
+ 179              		.loc 1 68 11
+ 180 00e2 804B     		ldr	r3, .L5+28
+ 181 00e4 5B68     		ldr	r3, [r3, #4]	@ float
+ 182 00e6 0A93     		str	r3, [sp, #40]	@ float
+  69:user_code/quaternion.c ****     float q2 = qt_filter.quat.q2;
+ 183              		.loc 1 69 11
+ 184 00e8 7E4B     		ldr	r3, .L5+28
+ 185 00ea 9B68     		ldr	r3, [r3, #8]	@ float
+ 186 00ec 0993     		str	r3, [sp, #36]	@ float
+  70:user_code/quaternion.c ****     float q3 = qt_filter.quat.q3;
+ 187              		.loc 1 70 11
+ 188 00ee 7D4B     		ldr	r3, .L5+28
+ 189 00f0 DB68     		ldr	r3, [r3, #12]	@ float
+ 190 00f2 0893     		str	r3, [sp, #32]	@ float
+  71:user_code/quaternion.c **** 
+  72:user_code/quaternion.c ****     // 陀螺仪积分
+  73:user_code/quaternion.c ****     q0 += (-q1 * gx - q2 * gy - q3 * gz) * qt_filter.sample_period * 0.5f;
+ 191              		.loc 1 73 12
+ 192 00f4 DDED0A7A 		vldr.32	s15, [sp, #40]
+ 193 00f8 B1EE677A 		vneg.f32	s14, s15
+ 194              		.loc 1 73 16
+ 195 00fc DDED027A 		vldr.32	s15, [sp, #8]
+ 196 0100 27EE277A 		vmul.f32	s14, s14, s15
+ 197              		.loc 1 73 26
+ 198 0104 DDED096A 		vldr.32	s13, [sp, #36]
+ 199 0108 DDED017A 		vldr.32	s15, [sp, #4]
+ 200 010c 66EEA77A 		vmul.f32	s15, s13, s15
+ 201              		.loc 1 73 21
+ 202 0110 37EE677A 		vsub.f32	s14, s14, s15
+ 203              		.loc 1 73 36
+ 204 0114 DDED086A 		vldr.32	s13, [sp, #32]
+ 205 0118 DDED007A 		vldr.32	s15, [sp]
+ 206 011c 66EEA77A 		vmul.f32	s15, s13, s15
+ 207              		.loc 1 73 31
+ 208 0120 37EE677A 		vsub.f32	s14, s14, s15
+ 209              		.loc 1 73 53
+ 210 0124 6F4B     		ldr	r3, .L5+28
+ 211 0126 D3ED097A 		vldr.32	s15, [r3, #36]
+ 212              		.loc 1 73 42
+ 213 012a 67EE277A 		vmul.f32	s15, s14, s15
+ 214              		.loc 1 73 68
+ 215 012e B6EE007A 		vmov.f32	s14, #5.0e-1
+ 216 0132 67EE877A 		vmul.f32	s15, s15, s14
+ 217              		.loc 1 73 8
+ 218 0136 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 219 013a 77EE277A 		vadd.f32	s15, s14, s15
+ 220 013e CDED0B7A 		vstr.32	s15, [sp, #44]
+  74:user_code/quaternion.c ****     q1 += ( q0 * gx + q2 * gz - q3 * gy) * qt_filter.sample_period * 0.5f;
+ 221              		.loc 1 74 16
+ 222 0142 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 223 0146 DDED027A 		vldr.32	s15, [sp, #8]
+ 224 014a 27EE277A 		vmul.f32	s14, s14, s15
+ 225              		.loc 1 74 26
+ 226 014e DDED096A 		vldr.32	s13, [sp, #36]
+ 227 0152 DDED007A 		vldr.32	s15, [sp]
+ 228 0156 66EEA77A 		vmul.f32	s15, s13, s15
+ 229              		.loc 1 74 21
+ 230 015a 37EE277A 		vadd.f32	s14, s14, s15
+ 231              		.loc 1 74 36
+ 232 015e DDED086A 		vldr.32	s13, [sp, #32]
+ 233 0162 DDED017A 		vldr.32	s15, [sp, #4]
+ 234 0166 66EEA77A 		vmul.f32	s15, s13, s15
+ 235              		.loc 1 74 31
+ 236 016a 37EE677A 		vsub.f32	s14, s14, s15
+ 237              		.loc 1 74 53
+ 238 016e 5D4B     		ldr	r3, .L5+28
+ 239 0170 D3ED097A 		vldr.32	s15, [r3, #36]
+ 240              		.loc 1 74 42
+ 241 0174 67EE277A 		vmul.f32	s15, s14, s15
+ 242              		.loc 1 74 68
+ 243 0178 B6EE007A 		vmov.f32	s14, #5.0e-1
+ 244 017c 67EE877A 		vmul.f32	s15, s15, s14
+ 245              		.loc 1 74 8
+ 246 0180 9DED0A7A 		vldr.32	s14, [sp, #40]
+ 247 0184 77EE277A 		vadd.f32	s15, s14, s15
+ 248 0188 CDED0A7A 		vstr.32	s15, [sp, #40]
+  75:user_code/quaternion.c ****     q2 += ( q0 * gy - q1 * gz + q3 * gx) * qt_filter.sample_period * 0.5f;
+ 249              		.loc 1 75 16
+ 250 018c 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 251 0190 DDED017A 		vldr.32	s15, [sp, #4]
+ 252 0194 27EE277A 		vmul.f32	s14, s14, s15
+ 253              		.loc 1 75 26
+ 254 0198 DDED0A6A 		vldr.32	s13, [sp, #40]
+ 255 019c DDED007A 		vldr.32	s15, [sp]
+ 256 01a0 66EEA77A 		vmul.f32	s15, s13, s15
+ 257              		.loc 1 75 21
+ 258 01a4 37EE677A 		vsub.f32	s14, s14, s15
+ 259              		.loc 1 75 36
+ 260 01a8 DDED086A 		vldr.32	s13, [sp, #32]
+ 261 01ac DDED027A 		vldr.32	s15, [sp, #8]
+ 262 01b0 66EEA77A 		vmul.f32	s15, s13, s15
+ 263              		.loc 1 75 31
+ 264 01b4 37EE277A 		vadd.f32	s14, s14, s15
+ 265              		.loc 1 75 53
+ 266 01b8 4A4B     		ldr	r3, .L5+28
+ 267 01ba D3ED097A 		vldr.32	s15, [r3, #36]
+ 268              		.loc 1 75 42
+ 269 01be 67EE277A 		vmul.f32	s15, s14, s15
+ 270              		.loc 1 75 68
+ 271 01c2 B6EE007A 		vmov.f32	s14, #5.0e-1
+ 272 01c6 67EE877A 		vmul.f32	s15, s15, s14
+ 273              		.loc 1 75 8
+ 274 01ca 9DED097A 		vldr.32	s14, [sp, #36]
+ 275 01ce 77EE277A 		vadd.f32	s15, s14, s15
+ 276 01d2 CDED097A 		vstr.32	s15, [sp, #36]
+  76:user_code/quaternion.c ****     q3 += ( q0 * gz + q1 * gy - q2 * gx) * qt_filter.sample_period * 0.5f;
+ 277              		.loc 1 76 16
+ 278 01d6 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 279 01da DDED007A 		vldr.32	s15, [sp]
+ 280 01de 27EE277A 		vmul.f32	s14, s14, s15
+ 281              		.loc 1 76 26
+ 282 01e2 DDED0A6A 		vldr.32	s13, [sp, #40]
+ 283 01e6 DDED017A 		vldr.32	s15, [sp, #4]
+ 284 01ea 66EEA77A 		vmul.f32	s15, s13, s15
+ 285              		.loc 1 76 21
+ 286 01ee 37EE277A 		vadd.f32	s14, s14, s15
+ 287              		.loc 1 76 36
+ 288 01f2 DDED096A 		vldr.32	s13, [sp, #36]
+ 289 01f6 DDED027A 		vldr.32	s15, [sp, #8]
+ 290 01fa 66EEA77A 		vmul.f32	s15, s13, s15
+ 291              		.loc 1 76 31
+ 292 01fe 37EE677A 		vsub.f32	s14, s14, s15
+ 293              		.loc 1 76 53
+ 294 0202 384B     		ldr	r3, .L5+28
+ 295 0204 D3ED097A 		vldr.32	s15, [r3, #36]
+ 296              		.loc 1 76 42
+ 297 0208 67EE277A 		vmul.f32	s15, s14, s15
+ 298              		.loc 1 76 68
+ 299 020c B6EE007A 		vmov.f32	s14, #5.0e-1
+ 300 0210 67EE877A 		vmul.f32	s15, s15, s14
+ 301              		.loc 1 76 8
+ 302 0214 9DED087A 		vldr.32	s14, [sp, #32]
+ 303 0218 77EE277A 		vadd.f32	s15, s14, s15
+ 304 021c CDED087A 		vstr.32	s15, [sp, #32]
+  77:user_code/quaternion.c **** 
+  78:user_code/quaternion.c ****     // 归一化
+  79:user_code/quaternion.c ****     float recip_norm = 1.0f / sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+ 305              		.loc 1 79 39
+ 306 0220 DDED0B7A 		vldr.32	s15, [sp, #44]
+ 307 0224 27EEA77A 		vmul.f32	s14, s15, s15
+ 308              		.loc 1 79 49
+ 309 0228 DDED0A7A 		vldr.32	s15, [sp, #40]
+ 310 022c 67EEA77A 		vmul.f32	s15, s15, s15
+ 311              		.loc 1 79 44
+ 312 0230 37EE277A 		vadd.f32	s14, s14, s15
+ 313              		.loc 1 79 59
+ 314 0234 DDED097A 		vldr.32	s15, [sp, #36]
+ 315 0238 67EEA77A 		vmul.f32	s15, s15, s15
+ 316              		.loc 1 79 54
+ 317 023c 37EE277A 		vadd.f32	s14, s14, s15
+ 318              		.loc 1 79 69
+ 319 0240 DDED087A 		vldr.32	s15, [sp, #32]
+ 320 0244 67EEA77A 		vmul.f32	s15, s15, s15
+ 321              		.loc 1 79 64
+ 322 0248 77EE277A 		vadd.f32	s15, s14, s15
+ 323              		.loc 1 79 31
+ 324 024c B7EEE77A 		vcvt.f64.f32	d7, s15
+ 325 0250 B0EE470B 		vmov.f64	d0, d7
+ 326 0254 FFF7FEFF 		bl	sqrt
+ 327 0258 B0EE406B 		vmov.f64	d6, d0
+ 328              		.loc 1 79 29
+ 329 025c B7EE005B 		vmov.f64	d5, #1.0e+0
+ 330 0260 85EE067B 		vdiv.f64	d7, d5, d6
+ 331              		.loc 1 79 11
+ 332 0264 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 333 0268 CDED077A 		vstr.32	s15, [sp, #28]
+  80:user_code/quaternion.c ****     qt_filter.quat.q0 = q0 * recip_norm;
+ 334              		.loc 1 80 28
+ 335 026c 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 336 0270 DDED077A 		vldr.32	s15, [sp, #28]
+ 337 0274 67EE277A 		vmul.f32	s15, s14, s15
+ 338              		.loc 1 80 23
+ 339 0278 1A4B     		ldr	r3, .L5+28
+ 340 027a C3ED007A 		vstr.32	s15, [r3]
+  81:user_code/quaternion.c ****     qt_filter.quat.q1 = q1 * recip_norm;
+ 341              		.loc 1 81 28
+ 342 027e 9DED0A7A 		vldr.32	s14, [sp, #40]
+ 343 0282 DDED077A 		vldr.32	s15, [sp, #28]
+ 344 0286 67EE277A 		vmul.f32	s15, s14, s15
+ 345              		.loc 1 81 23
+ 346 028a 164B     		ldr	r3, .L5+28
+ 347 028c C3ED017A 		vstr.32	s15, [r3, #4]
+  82:user_code/quaternion.c ****     qt_filter.quat.q2 = q2 * recip_norm;
+ 348              		.loc 1 82 28
+ 349 0290 9DED097A 		vldr.32	s14, [sp, #36]
+ 350 0294 DDED077A 		vldr.32	s15, [sp, #28]
+ 351 0298 67EE277A 		vmul.f32	s15, s14, s15
+ 352              		.loc 1 82 23
+ 353 029c 114B     		ldr	r3, .L5+28
+ 354 029e C3ED027A 		vstr.32	s15, [r3, #8]
+  83:user_code/quaternion.c ****     qt_filter.quat.q3 = q3 * recip_norm;
+ 355              		.loc 1 83 28
+ 356 02a2 9DED087A 		vldr.32	s14, [sp, #32]
+ 357 02a6 DDED077A 		vldr.32	s15, [sp, #28]
+ 358 02aa 67EE277A 		vmul.f32	s15, s14, s15
+ 359              		.loc 1 83 23
+ 360 02ae 0D4B     		ldr	r3, .L5+28
+ 361 02b0 C3ED037A 		vstr.32	s15, [r3, #12]
+  84:user_code/quaternion.c **** 
+  85:user_code/quaternion.c ****     // 计算欧拉角
+  86:user_code/quaternion.c ****     quaternion_get_euler(&qt_filter.euler);
+ 362              		.loc 1 86 5
+ 363 02b4 0C48     		ldr	r0, .L5+32
+ 364 02b6 FFF7FEFF 		bl	quaternion_get_euler
+  87:user_code/quaternion.c **** }
+ 365              		.loc 1 87 1
+ 366 02ba 00BF     		nop
+ 367 02bc 0DB0     		add	sp, sp, #52
+ 368              		.cfi_def_cfa_offset 4
+ 369              		@ sp needed
+ 370 02be 5DF804FB 		ldr	pc, [sp], #4
+ 371              	.L6:
+ 372 02c2 00BFAFF3 		.align	3
+ 372      0080
+ 373              	.L5:
+ 374 02c8 399D52A2 		.word	-1571644103
+ 375 02cc 46DF913F 		.word	1066524486
+ 376 02d0 CDCC4C3E 		.word	1045220557
+ 377 02d4 00000000 		.word	last_gx.2
+ 378 02d8 CDCC4C3F 		.word	1061997773
+ 379 02dc 00000000 		.word	last_gy.1
+ 380 02e0 00000000 		.word	last_gz.0
+ 381 02e4 00000000 		.word	qt_filter
+ 382 02e8 10000000 		.word	qt_filter+16
+ 383              		.cfi_endproc
+ 384              	.LFE483:
+ 386              		.section	.text.quaternion_get_euler,"ax",%progbits
+ 387              		.align	1
+ 388              		.p2align 4,,15
+ 389              		.global	quaternion_get_euler
+ 390              		.syntax unified
+ 391              		.thumb
+ 392              		.thumb_func
+ 394              	quaternion_get_euler:
+ 395              	.LFB484:
+  88:user_code/quaternion.c **** 
+  89:user_code/quaternion.c **** //-------------------------------------------------------------------------------------------------
+  90:user_code/quaternion.c **** // 函数简介     从四元数中计算欧拉角
+  91:user_code/quaternion.c **** // 参数说明     *angles;                     当前欧拉角
+  92:user_code/quaternion.c **** // 返回参数     void
+  93:user_code/quaternion.c **** // 使用示例
+  94:user_code/quaternion.c **** // 备注信息     得到计算后的欧拉角
+  95:user_code/quaternion.c **** //-------------------------------------------------------------------------------------------------
+  96:user_code/quaternion.c **** void quaternion_get_euler(eulerangles *angles)
+  97:user_code/quaternion.c **** {
+ 396              		.loc 1 97 1
+ 397              		.cfi_startproc
+ 398              		@ args = 0, pretend = 0, frame = 48
+ 399              		@ frame_needed = 0, uses_anonymous_args = 0
+ 400 0000 00B5     		push	{lr}
+ 401              		.cfi_def_cfa_offset 4
+ 402              		.cfi_offset 14, -4
+ 403 0002 8DB0     		sub	sp, sp, #52
+ 404              		.cfi_def_cfa_offset 56
+ 405 0004 0190     		str	r0, [sp, #4]
+  98:user_code/quaternion.c ****     float q0 = qt_filter.quat.q0;
+ 406              		.loc 1 98 11
+ 407 0006 7C4B     		ldr	r3, .L13+16
+ 408 0008 1B68     		ldr	r3, [r3]	@ float
+ 409 000a 0B93     		str	r3, [sp, #44]	@ float
+  99:user_code/quaternion.c ****     float q1 = qt_filter.quat.q1;
+ 410              		.loc 1 99 11
+ 411 000c 7A4B     		ldr	r3, .L13+16
+ 412 000e 5B68     		ldr	r3, [r3, #4]	@ float
+ 413 0010 0A93     		str	r3, [sp, #40]	@ float
+ 100:user_code/quaternion.c ****     float q2 = qt_filter.quat.q2;
+ 414              		.loc 1 100 11
+ 415 0012 794B     		ldr	r3, .L13+16
+ 416 0014 9B68     		ldr	r3, [r3, #8]	@ float
+ 417 0016 0993     		str	r3, [sp, #36]	@ float
+ 101:user_code/quaternion.c ****     float q3 = qt_filter.quat.q3;
+ 418              		.loc 1 101 11
+ 419 0018 774B     		ldr	r3, .L13+16
+ 420 001a DB68     		ldr	r3, [r3, #12]	@ float
+ 421 001c 0893     		str	r3, [sp, #32]	@ float
+ 102:user_code/quaternion.c **** 
+ 103:user_code/quaternion.c ****     // Roll (X轴旋转)
+ 104:user_code/quaternion.c ****     float sinr_cosp = 2.0f * (q0 * q1 + q2 * q3);
+ 422              		.loc 1 104 34
+ 423 001e 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 424 0022 DDED0A7A 		vldr.32	s15, [sp, #40]
+ 425 0026 27EE277A 		vmul.f32	s14, s14, s15
+ 426              		.loc 1 104 44
+ 427 002a DDED096A 		vldr.32	s13, [sp, #36]
+ 428 002e DDED087A 		vldr.32	s15, [sp, #32]
+ 429 0032 66EEA77A 		vmul.f32	s15, s13, s15
+ 430              		.loc 1 104 39
+ 431 0036 77EE277A 		vadd.f32	s15, s14, s15
+ 432              		.loc 1 104 11
+ 433 003a 77EEA77A 		vadd.f32	s15, s15, s15
+ 434 003e CDED077A 		vstr.32	s15, [sp, #28]
+ 105:user_code/quaternion.c ****     float cosr_cosp = 1.0f - 2.0f * (q1 * q1 + q2 * q2);
+ 435              		.loc 1 105 41
+ 436 0042 DDED0A7A 		vldr.32	s15, [sp, #40]
+ 437 0046 27EEA77A 		vmul.f32	s14, s15, s15
+ 438              		.loc 1 105 51
+ 439 004a DDED097A 		vldr.32	s15, [sp, #36]
+ 440 004e 67EEA77A 		vmul.f32	s15, s15, s15
+ 441              		.loc 1 105 46
+ 442 0052 77EE277A 		vadd.f32	s15, s14, s15
+ 443              		.loc 1 105 35
+ 444 0056 77EEA77A 		vadd.f32	s15, s15, s15
+ 445              		.loc 1 105 11
+ 446 005a B7EE007A 		vmov.f32	s14, #1.0e+0
+ 447 005e 77EE677A 		vsub.f32	s15, s14, s15
+ 448 0062 CDED067A 		vstr.32	s15, [sp, #24]
+ 106:user_code/quaternion.c ****     angles->roll = atan2(sinr_cosp, cosr_cosp);
+ 449              		.loc 1 106 20
+ 450 0066 DDED077A 		vldr.32	s15, [sp, #28]
+ 451 006a B7EEE77A 		vcvt.f64.f32	d7, s15
+ 452 006e DDED066A 		vldr.32	s13, [sp, #24]
+ 453 0072 B7EEE66A 		vcvt.f64.f32	d6, s13
+ 454 0076 B0EE461B 		vmov.f64	d1, d6
+ 455 007a B0EE470B 		vmov.f64	d0, d7
+ 456 007e FFF7FEFF 		bl	atan2
+ 457 0082 B0EE407B 		vmov.f64	d7, d0
+ 458 0086 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 459              		.loc 1 106 18
+ 460 008a 019B     		ldr	r3, [sp, #4]
+ 461 008c C3ED007A 		vstr.32	s15, [r3]
+ 107:user_code/quaternion.c **** 
+ 108:user_code/quaternion.c ****     // Pitch (Y轴旋转)
+ 109:user_code/quaternion.c ****     float sinp = 2.0f * (q0 * q2 - q3 * q1);
+ 462              		.loc 1 109 29
+ 463 0090 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 464 0094 DDED097A 		vldr.32	s15, [sp, #36]
+ 465 0098 27EE277A 		vmul.f32	s14, s14, s15
+ 466              		.loc 1 109 39
+ 467 009c DDED086A 		vldr.32	s13, [sp, #32]
+ 468 00a0 DDED0A7A 		vldr.32	s15, [sp, #40]
+ 469 00a4 66EEA77A 		vmul.f32	s15, s13, s15
+ 470              		.loc 1 109 34
+ 471 00a8 77EE677A 		vsub.f32	s15, s14, s15
+ 472              		.loc 1 109 11
+ 473 00ac 77EEA77A 		vadd.f32	s15, s15, s15
+ 474 00b0 CDED057A 		vstr.32	s15, [sp, #20]
+ 110:user_code/quaternion.c ****     if (fabs(sinp) >= 1.0f)
+ 475              		.loc 1 110 9
+ 476 00b4 DDED057A 		vldr.32	s15, [sp, #20]
+ 477 00b8 F0EEE77A 		vabs.f32	s15, s15
+ 478              		.loc 1 110 8
+ 479 00bc B7EE007A 		vmov.f32	s14, #1.0e+0
+ 480 00c0 F4EEC77A 		vcmpe.f32	s15, s14
+ 481 00c4 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 482 00c8 11DB     		blt	.L12
+ 111:user_code/quaternion.c ****     {
+ 112:user_code/quaternion.c ****         angles->pitch = copysign(M_PI / 2.0f, sinp); // 如果超出范围，请使用90度
+ 483              		.loc 1 112 25
+ 484 00ca DDED057A 		vldr.32	s15, [sp, #20]
+ 485 00ce B7EEE77A 		vcvt.f64.f32	d7, s15
+ 486 00d2 B0EE471B 		vmov.f64	d1, d7
+ 487 00d6 9FED440B 		vldr.64	d0, .L13
+ 488 00da FFF7FEFF 		bl	copysign
+ 489 00de B0EE407B 		vmov.f64	d7, d0
+ 490 00e2 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 491              		.loc 1 112 23
+ 492 00e6 019B     		ldr	r3, [sp, #4]
+ 493 00e8 C3ED017A 		vstr.32	s15, [r3, #4]
+ 494 00ec 0EE0     		b	.L10
+ 495              	.L12:
+ 113:user_code/quaternion.c ****     }
+ 114:user_code/quaternion.c ****     else
+ 115:user_code/quaternion.c ****     {
+ 116:user_code/quaternion.c ****         angles->pitch = asin(sinp);
+ 496              		.loc 1 116 25
+ 497 00ee DDED057A 		vldr.32	s15, [sp, #20]
+ 498 00f2 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 499 00f6 B0EE470B 		vmov.f64	d0, d7
+ 500 00fa FFF7FEFF 		bl	asin
+ 501 00fe B0EE407B 		vmov.f64	d7, d0
+ 502 0102 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 503              		.loc 1 116 23
+ 504 0106 019B     		ldr	r3, [sp, #4]
+ 505 0108 C3ED017A 		vstr.32	s15, [r3, #4]
+ 506              	.L10:
+ 117:user_code/quaternion.c ****     }
+ 118:user_code/quaternion.c **** 
+ 119:user_code/quaternion.c ****     // Yaw (Z轴旋转)
+ 120:user_code/quaternion.c ****     float siny_cosp = 2.0f * (q0 * q3 + q1 * q2);
+ 507              		.loc 1 120 34
+ 508 010c 9DED0B7A 		vldr.32	s14, [sp, #44]
+ 509 0110 DDED087A 		vldr.32	s15, [sp, #32]
+ 510 0114 27EE277A 		vmul.f32	s14, s14, s15
+ 511              		.loc 1 120 44
+ 512 0118 DDED0A6A 		vldr.32	s13, [sp, #40]
+ 513 011c DDED097A 		vldr.32	s15, [sp, #36]
+ 514 0120 66EEA77A 		vmul.f32	s15, s13, s15
+ 515              		.loc 1 120 39
+ 516 0124 77EE277A 		vadd.f32	s15, s14, s15
+ 517              		.loc 1 120 11
+ 518 0128 77EEA77A 		vadd.f32	s15, s15, s15
+ 519 012c CDED047A 		vstr.32	s15, [sp, #16]
+ 121:user_code/quaternion.c ****     float cosy_cosp = 1.0f - 2.0f * (q2 * q2 + q3 * q3);
+ 520              		.loc 1 121 41
+ 521 0130 DDED097A 		vldr.32	s15, [sp, #36]
+ 522 0134 27EEA77A 		vmul.f32	s14, s15, s15
+ 523              		.loc 1 121 51
+ 524 0138 DDED087A 		vldr.32	s15, [sp, #32]
+ 525 013c 67EEA77A 		vmul.f32	s15, s15, s15
+ 526              		.loc 1 121 46
+ 527 0140 77EE277A 		vadd.f32	s15, s14, s15
+ 528              		.loc 1 121 35
+ 529 0144 77EEA77A 		vadd.f32	s15, s15, s15
+ 530              		.loc 1 121 11
+ 531 0148 B7EE007A 		vmov.f32	s14, #1.0e+0
+ 532 014c 77EE677A 		vsub.f32	s15, s14, s15
+ 533 0150 CDED037A 		vstr.32	s15, [sp, #12]
+ 122:user_code/quaternion.c ****     angles->yaw = atan2(siny_cosp, cosy_cosp);
+ 534              		.loc 1 122 19
+ 535 0154 DDED047A 		vldr.32	s15, [sp, #16]
+ 536 0158 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 537 015c DDED036A 		vldr.32	s13, [sp, #12]
+ 538 0160 B7EEE66A 		vcvt.f64.f32	d6, s13
+ 539 0164 B0EE461B 		vmov.f64	d1, d6
+ 540 0168 B0EE470B 		vmov.f64	d0, d7
+ 541 016c FFF7FEFF 		bl	atan2
+ 542 0170 B0EE407B 		vmov.f64	d7, d0
+ 543 0174 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 544              		.loc 1 122 17
+ 545 0178 019B     		ldr	r3, [sp, #4]
+ 546 017a C3ED027A 		vstr.32	s15, [r3, #8]
+ 123:user_code/quaternion.c **** 
+ 124:user_code/quaternion.c ****     // 转换为角度
+ 125:user_code/quaternion.c ****     angles->roll  *= 180.0f / M_PI;
+ 547              		.loc 1 125 19
+ 548 017e 019B     		ldr	r3, [sp, #4]
+ 549 0180 D3ED007A 		vldr.32	s15, [r3]
+ 550 0184 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 551 0188 9FED196B 		vldr.64	d6, .L13+8
+ 552 018c 27EE067B 		vmul.f64	d7, d7, d6
+ 553 0190 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 554 0194 019B     		ldr	r3, [sp, #4]
+ 555 0196 C3ED007A 		vstr.32	s15, [r3]
+ 126:user_code/quaternion.c ****     angles->pitch *= 180.0f / M_PI;
+ 556              		.loc 1 126 19
+ 557 019a 019B     		ldr	r3, [sp, #4]
+ 558 019c D3ED017A 		vldr.32	s15, [r3, #4]
+ 559 01a0 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 560 01a4 9FED126B 		vldr.64	d6, .L13+8
+ 561 01a8 27EE067B 		vmul.f64	d7, d7, d6
+ 562 01ac F7EEC77B 		vcvt.f32.f64	s15, d7
+ 563 01b0 019B     		ldr	r3, [sp, #4]
+ 564 01b2 C3ED017A 		vstr.32	s15, [r3, #4]
+ 127:user_code/quaternion.c ****     angles->yaw   *= 180.0f / M_PI;
+ 565              		.loc 1 127 19
+ 566 01b6 019B     		ldr	r3, [sp, #4]
+ 567 01b8 D3ED027A 		vldr.32	s15, [r3, #8]
+ 568 01bc B7EEE77A 		vcvt.f64.f32	d7, s15
+ 569 01c0 9FED0B6B 		vldr.64	d6, .L13+8
+ 570 01c4 27EE067B 		vmul.f64	d7, d7, d6
+ 571 01c8 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 572 01cc 019B     		ldr	r3, [sp, #4]
+ 573 01ce C3ED027A 		vstr.32	s15, [r3, #8]
+ 128:user_code/quaternion.c ****     angles->calibrated = qt_filter.euler.calibrated; // 传递校准状态
+ 574              		.loc 1 128 41
+ 575 01d2 094B     		ldr	r3, .L13+16
+ 576 01d4 1A7F     		ldrb	r2, [r3, #28]	@ zero_extendqisi2
+ 577              		.loc 1 128 24
+ 578 01d6 019B     		ldr	r3, [sp, #4]
+ 579 01d8 1A73     		strb	r2, [r3, #12]
+ 129:user_code/quaternion.c **** }
+ 580              		.loc 1 129 1
+ 581 01da 00BF     		nop
+ 582 01dc 0DB0     		add	sp, sp, #52
+ 583              		.cfi_def_cfa_offset 4
+ 584              		@ sp needed
+ 585 01de 5DF804FB 		ldr	pc, [sp], #4
+ 586              	.L14:
+ 587 01e2 00BFAFF3 		.align	3
+ 587      0080
+ 588              	.L13:
+ 589 01e8 182D4454 		.word	1413754136
+ 590 01ec FB21F93F 		.word	1073291771
+ 591 01f0 F8C1631A 		.word	442745336
+ 592 01f4 DCA54C40 		.word	1078765020
+ 593 01f8 00000000 		.word	qt_filter
+ 594              		.cfi_endproc
+ 595              	.LFE484:
+ 597              		.section	.bss.last_gx.2,"aw",%nobits
+ 598              		.align	2
+ 601              	last_gx.2:
+ 602 0000 00000000 		.space	4
+ 603              		.section	.bss.last_gy.1,"aw",%nobits
+ 604              		.align	2
+ 607              	last_gy.1:
+ 608 0000 00000000 		.space	4
+ 609              		.section	.bss.last_gz.0,"aw",%nobits
+ 610              		.align	2
+ 613              	last_gz.0:
+ 614 0000 00000000 		.space	4
+ 615              		.text
+ 616              	.Letext0:
+ 617              		.file 2 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 618              		.file 3 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 619              		.file 4 "libraries/zf_common/zf_common_typedef.h"
+ 620              		.file 5 "C:/StellarStudio-7.0/SDKS/StellarESDK-1.7.0/Modules/Platform/MCU/include/sr5e1/sr5e1xx.h"
+ 621              		.file 6 "libraries/zf_driver/zf_driver_gpio.h"
+ 622              		.file 7 "libraries/zf_driver/zf_driver_adc.h"
+ 623              		.file 8 "libraries/zf_driver/zf_driver_can.h"
+ 624              		.file 9 "libraries/zf_driver/zf_driver_encoder.h"
+ 625              		.file 10 "libraries/zf_driver/zf_driver_exti.h"
+ 626              		.file 11 "libraries/zf_driver/zf_driver_hrtim.h"
+ 627              		.file 12 "libraries/zf_driver/zf_driver_pwm.h"
+ 628              		.file 13 "libraries/zf_driver/zf_driver_spi.h"
+ 629              		.file 14 "libraries/zf_driver/zf_driver_uart.h"
+ 630              		.file 15 "libraries/zf_device/zf_device_imu_interface.h"
+ 631              		.file 16 "user_code/quaternion.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 quaternion.c
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:23     .bss.qt_filter:00000000 qt_filter
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:20     .bss.qt_filter:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:26     .text.quaternion_init:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:33     .text.quaternion_init:00000000 quaternion_init
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:75     .text.quaternion_init:00000038 $d
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:82     .text.quaternion_update:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:89     .text.quaternion_update:00000000 quaternion_update
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:394    .text.quaternion_get_euler:00000000 quaternion_get_euler
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:374    .text.quaternion_update:000002c8 $d
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:601    .bss.last_gx.2:00000000 last_gx.2
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:607    .bss.last_gy.1:00000000 last_gy.1
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:613    .bss.last_gz.0:00000000 last_gz.0
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:387    .text.quaternion_get_euler:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:589    .text.quaternion_get_euler:000001e8 $d
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:598    .bss.last_gx.2:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:604    .bss.last_gy.1:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccP7wHYV.s:610    .bss.last_gz.0:00000000 $d
+                           .group:00000000 wm4.0.1ea29c7543256e0887205fa7f8c557c8
+                           .group:00000000 wm4._newlib_version.h.4.bfdf54b0af045d4a71376ae00f63a22c
+                           .group:00000000 wm4.newlib.h.18.1c9fedb6b3cd797cff253cc0fd593ef2
+                           .group:00000000 wm4.ieeefp.h.77.2bc94c1d1ed8b02df437510a04ac1e45
+                           .group:00000000 wm4.features.h.22.026edb2397769f4ae13f35900dbdb560
+                           .group:00000000 wm4.config.h.224.c701144a7b0518c6ee9b9b5465b79f81
+                           .group:00000000 wm4._ansi.h.31.de524f58584151836e90d8620a16f8e8
+                           .group:00000000 wm4.stdio.h.31.7c0e28c411445f3f9c5b11accf882760
+                           .group:00000000 wm4._default_types.h.6.959254cf5f09734ea7516c89e8bb21bd
+                           .group:00000000 wm4.stddef.h.181.c3f52a3b0f4c288bddb5dda1562858e2
+                           .group:00000000 wm4.cdefs.h.49.a54b2d5c07711bc7320a3fea9f12cb56
+                           .group:00000000 wm4.stddef.h.39.c161261b198ee3a963897077fd6fa59f
+                           .group:00000000 wm4.stdarg.h.34.3a23a216c0c293b3d2ea2e89281481e6
+                           .group:00000000 wm4._types.h.20.dd0d04dca3800a0d2a6129b87f3adbb2
+                           .group:00000000 wm4.stddef.h.155.3588ebfdd1e8c7ede80509bb9c3b8009
+                           .group:00000000 wm4._types.h.127.34941de1b2539d59d5cac00e0dd27a45
+                           .group:00000000 wm4.reent.h.17.e292bf8b0bec6c96e131a54347145a30
+                           .group:00000000 wm4.lock.h.2.1461d1fff82dffe8bfddc23307f6484f
+                           .group:00000000 wm4.reent.h.77.dcd6129ff07fe81bd5636db29abe53b2
+                           .group:00000000 wm4.types.h.40.8b6acba56cefbb11746718204edc8f5e
+                           .group:00000000 wm4._stdint.h.10.c24fa3af3bc1706662bb5593a907e841
+                           .group:00000000 wm4._endian.h.31.65a10590763c3dde1ac4a7f66d7d4891
+                           .group:00000000 wm4.endian.h.9.49f3a4695c1b61e8a0808de3c4a106cb
+                           .group:00000000 wm4._timeval.h.32.bec3221fa7a9bb0bdde696c9c57e47d2
+                           .group:00000000 wm4.timespec.h.41.d855182eb0e690443ab8651bcedca6e1
+                           .group:00000000 wm4.select.h.19.40cd3f2bfc456b193b790c2754690ebf
+                           .group:00000000 wm4.types.h.51.5571ec98f267d17d3c670b7a3ba33afa
+                           .group:00000000 wm4.sched.h.22.c60982713a5c428609783c78f9c78d95
+                           .group:00000000 wm4._pthreadtypes.h.36.fcee9961c35163dde6267ef772ad1972
+                           .group:00000000 wm4.stdio.h.2.4aa87247282eca6c8f36f9de33d8df1a
+                           .group:00000000 wm4.stdio.h.81.932d0c162786b883f622b8d05c120c78
+                           .group:00000000 wm4._intsup.h.10.48bafbb683905c4daa4565a85aeeb264
+                           .group:00000000 wm4.stdint.h.23.d53047a68f4a85177f80b422d52785ed
+                           .group:00000000 wm4.stdbool.h.29.07dce69c3b78884144b7f7bd19483461
+                           .group:00000000 wm4.stdarg.h.31.3fa7b8f6daaa31edd1696c08c77f2a73
+                           .group:00000000 wm4.string.h.8.c4b8571ce60dff2817f43fec8b86aecd
+                           .group:00000000 wm4.stddef.h.155.ba788add86a0e365f264484f110c3c29
+                           .group:00000000 wm4.stdlib.h.13.4ed386f5c1a80d71e72172885d946ef2
+                           .group:00000000 wm4.alloca.h.8.dfc0c703c47ec3e69746825b17d9e66d
+                           .group:00000000 wm4.stdlib.h.56.f4862cfbf4363a1db01842d5bdf72c18
+                           .group:00000000 wm4.zf_common_typedef.h.47.8c368673885c9d07221c267e15ab1069
+                           .group:00000000 wm4.sr5e1xx.h.22.e5c808533cc52ed19fb0830cd7d98924
+                           .group:00000000 wm4.cmsis_version.h.32.0f826810625204eca22a19868bdc7586
+                           .group:00000000 wm4.core_cm7.h.66.8ab2de36917d6fcae18019067fda13e0
+                           .group:00000000 wm4.cmsis_gcc.h.26.498d0ad17a45fc9ef20fdc01caf02259
+                           .group:00000000 wm4.core_cm7.h.174.43edb295ecdaadad738f48ba6011ffad
+                           .group:00000000 wm4.mpu_armv7.h.32.83326921a797fa9d6f70449916b4b839
+                           .group:00000000 wm4.cachel1_armv7.h.32.abd77761a989e008b0c60891114a33c7
+                           .group:00000000 wm4.SR5E1_ADC.h.14.21608e6aff125ba995dd767d6d8dc311
+                           .group:00000000 wm4.SR5E1_CEM.h.14.01fe5742c8f1ae35b1f3af05932f702e
+                           .group:00000000 wm4.SR5E1_CMU.h.14.2617b38b159abe38028862394531e06d
+                           .group:00000000 wm4.SR5E1_COMP.h.14.4b6fdfe4f5f7fd9bedf3a99b98bdf4cd
+                           .group:00000000 wm4.SR5E1_CORDIC.h.14.354fbf7c9eaf6963d38eaa25cf28ffe8
+                           .group:00000000 wm4.SR5E1_CRC.h.14.c64d0f7767671ddb92e9ead0a1162100
+                           .group:00000000 wm4.SR5E1_DAC.h.14.8c26a0ff04b0cfeb55306cc3f22187b8
+                           .group:00000000 wm4.SR5E1_DBGMCU.h.14.427df893d53a8044654f017ba01c25ed
+                           .group:00000000 wm4.SR5E1_DMA.h.14.a7f9a92f844b40a86965798c2e64240b
+                           .group:00000000 wm4.SR5E1_DMAMUX.h.14.471b3b4dfd4d41515f1df49493698866
+                           .group:00000000 wm4.SR5E1_EXTI.h.14.a325ea3fe89cd84894660551c33241ea
+                           .group:00000000 wm4.SR5E1_FCCU.h.14.0ebf0f0f36e079d28613ad2c80e17e23
+                           .group:00000000 wm4.SR5E1_FDCAN.h.14.ac57101fad5dbc798bfb93f34c899de7
+                           .group:00000000 wm4.SR5E1_FLASH_REG_ITF.h.14.d23d1d44923f9b20b8c8fdb51d66aefd
+                           .group:00000000 wm4.SR5E1_GPIO.h.14.1c84071e130d7c64b62470ab0e18a1f1
+                           .group:00000000 wm4.SR5E1_HRTIM.h.24.03932387d2522e6bd5c772a4edaf2f5d
+                           .group:00000000 wm4.SR5E1_HSEM.h.14.cbe70eee519f01b16452c3f8c99d8df1
+                           .group:00000000 wm4.SR5E1_I2C.h.14.350ba3e0f4fd57828457efa80135c36c
+                           .group:00000000 wm4.SR5E1_IMA.h.14.62b7088985ab2b7ce9b030a02daa1f7d
+                           .group:00000000 wm4.SR5E1_IWDG.h.14.20b7c5f05cf7ae94464c360d7af3660d
+                           .group:00000000 wm4.SR5E1_MEMU.h.14.04bad7ae4c52ce334a4fc900aad2ae5b
+                           .group:00000000 wm4.SR5E1_NVM_CTRL.h.14.5f442617f0628d4f16258f211c614ef9
+                           .group:00000000 wm4.SR5E1_PLLDIG.h.14.bd87a8e6917eee17dae2f312c8e5fa53
+                           .group:00000000 wm4.SR5E1_PMC_DIG.h.14.54173b566c6656344766ec4ef46c9281
+                           .group:00000000 wm4.SR5E1_RCC.h.14.56734803c71534de286e793a53649740
+                           .group:00000000 wm4.SR5E1_RTC.h.14.47037cbc7d8175dbf2be1dc0bb955e3f
+                           .group:00000000 wm4.SR5E1_SD_ADC.h.14.552b97d0b8f3c1fd4df6d8964b2f1a80
+                           .group:00000000 wm4.SR5E1_SMPU.h.14.8ce5bb6d5d7c579cd725f492f46e9085
+                           .group:00000000 wm4.SR5E1_SPI.h.14.42d52112e540f85ade4d9135f8b87d72
+                           .group:00000000 wm4.SR5E1_SSCM.h.14.8e6a2ad0ce5fca422fc3d69939b6125b
+                           .group:00000000 wm4.SR5E1_SYSCFG.h.14.02b969490118ce4069914b5e94f7ca65
+                           .group:00000000 wm4.SR5E1_TDM.h.14.a40ed7928cad243a57fd233fccf01ad2
+                           .group:00000000 wm4.SR5E1_TIM.h.14.f17572f4c16f3f152b8164ad25c34f5b
+                           .group:00000000 wm4.SR5E1_UART.h.14.eec3ab82b02b3bdb3de500483675b83f
+                           .group:00000000 wm4.SR5E1_WWDG.h.14.59b45efc70e442cc6ef03702aad4ad88
+                           .group:00000000 wm4.typedefs.h.36.07fe3956b4e751037cfee70edcd0b397
+                           .group:00000000 wm4.irq_numbers.h.38.6294b95aed1bf7b3a2cda0eed8ce8f57
+                           .group:00000000 wm4.regs.h.23.2ac145b4f57126d16daed5fbd86d99c6
+                           .group:00000000 wm4.zf_common_debug.h.33.6d362bbaa8a8ff23e6f5c0a30bf7361f
+                           .group:00000000 wm4.zf_common_fifo.h.33.e14e643902e26e4e65437b5b20e82793
+                           .group:00000000 wm4.zf_common_function.h.33.02bbfb055e8ee322bc4f8b14ea195da2
+                           .group:00000000 wm4.zf_common_memory.h.33.d43647290a4d62164ff2ec77cadb89d8
+                           .group:00000000 wm4.saradc.h.25.e5a70aef9ec4fddf35f2b7cc0c9cf1bc
+                           .group:00000000 wm4.gpio.h.25.d41a0c19fda8c2de42e666afb48ec15a
+                           .group:00000000 wm4.zf_driver_gpio.h.65.5a4d2084c62fed7c22fdca02e748c198
+                           .group:00000000 wm4.zf_driver_adc.h.64.349fb433626b42172b0e0fee038428ca
+                           .group:00000000 wm4.can.h.25.3cfccb6c630ada4f656cab597e231e58
+                           .group:00000000 wm4.dmamux.h.25.337aea179f6dbcc87c52aae26d38f76e
+                           .group:00000000 wm4.clock_cfg.h.24.0aed3cee9ecce947225a304181294191
+                           .group:00000000 wm4.clock.h.37.80236c5607fdd9eb9275e5111a4191c3
+                           .group:00000000 wm4.irq.h.37.78714f25754c8b09d1428599101f6cc7
+                           .group:00000000 wm4.dma.h.40.f77dd217a06ceba13a3cfdd4102a73c1
+                           .group:00000000 wm4.zf_driver_can.h.67.fd10d2fa867eb54a54d4b57027d73a60
+                           .group:00000000 wm4.tim.h.25.6e7ad96569e77a70a68b9b4cc59f54f2
+                           .group:00000000 wm4.zf_driver_timer.h.33.8df253b6990d9861816977209fb11e90
+                           .group:00000000 wm4.zf_driver_encoder.h.57.7e32999f25354fac086ca226b0c630d4
+                           .group:00000000 wm4.exti.h.25.21597c35d9630b0985ce88d2c41f4ea4
+                           .group:00000000 wm4.zf_driver_exti.h.59.1b02b8083e5295ef5baaf83905d59395
+                           .group:00000000 wm4.ssd_types.h.29.b861f4e6d39d333f931bfc05b964cb1c
+                           .group:00000000 wm4.ssd_C55.h.37.dad650468a97d71aff4dd65ca085590f
+                           .group:00000000 wm4.zf_driver_flash.h.59.db93fe574c35ea9e79030063fbb35a13
+                           .group:00000000 wm4.hrtim.h.25.1601aea9d4a0da1de8252dc444355251
+                           .group:00000000 wm4.zf_driver_hrtim.h.64.cd8d2bf3bf1c471ea59d9c61e4a721d7
+                           .group:00000000 wm4.zf_driver_interrupt.h.33.2c3660dcc36cb090bd75b8f180c14f27
+                           .group:00000000 wm4.zf_driver_pit.h.33.834ac720a62e09d5603a9557331e9049
+                           .group:00000000 wm4.zf_driver_pwm.h.33.7d80487064ca712231a453396685a551
+                           .group:00000000 wm4.zf_driver_rcc.h.33.4c228cf40a79e1b974b30d5a9a3a77a7
+                           .group:00000000 wm4.zf_driver_soft_iic.h.33.9067bd298084134f63c61c075f95fa2b
+                           .group:00000000 wm4.zf_driver_soft_spi.h.33.a938287c023905d97cafe56e4be63674
+                           .group:00000000 wm4.zf_driver_spi.h.62.950b1f52ed365034df2907601137b455
+                           .group:00000000 wm4.zf_driver_system.h.33.370922a9681b47d575d2c83d302a180b
+                           .group:00000000 wm4.zf_driver_uart.h.70.ffcf3694337ad0b4066179f1abd5d668
+                           .group:00000000 wm4.zf_device_imu_interface.h.76.450693495da70d0baeb57a35ebd84d55
+                           .group:00000000 wm4.math.h.13.b6595ad277a643a6127e1a4515a98f91
+                           .group:00000000 wm4.quaternion.h.15.d2ef326a4e7ac21d4b5d449e696cdef0
+
+UNDEFINED SYMBOLS
+sqrt
+atan2
+copysign
+asin

@@ -1,0 +1,630 @@
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"nfc_usart.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.global	get_data_len
+  19              		.section	.data.get_data_len,"aw"
+  20              		.align	2
+  23              	get_data_len:
+  24 0000 14000000 		.word	20
+  25              		.global	get_data
+  26              		.section	.bss.get_data,"aw",%nobits
+  27              		.align	2
+  30              	get_data:
+  31 0000 00000000 		.space	20
+  31      00000000 
+  31      00000000 
+  31      00000000 
+  31      00000000 
+  32              		.global	fifo_buffer
+  33              		.section	.bss.fifo_buffer,"aw",%nobits
+  34              		.align	2
+  37              	fifo_buffer:
+  38 0000 00000000 		.space	20
+  38      00000000 
+  38      00000000 
+  38      00000000 
+  38      00000000 
+  39              		.global	left
+  40              		.section	.bss.left,"aw",%nobits
+  43              	left:
+  44 0000 00       		.space	1
+  45              		.global	right
+  46              		.section	.bss.right,"aw",%nobits
+  49              	right:
+  50 0000 00       		.space	1
+  51              		.global	uart_fifo
+  52              		.section	.bss.uart_fifo,"aw",%nobits
+  53              		.align	2
+  56              	uart_fifo:
+  57 0000 00000000 		.space	20
+  57      00000000 
+  57      00000000 
+  57      00000000 
+  57      00000000 
+  58              		.section	.text.dlw_nfc_usart_init,"ax",%progbits
+  59              		.align	1
+  60              		.p2align 4,,15
+  61              		.global	dlw_nfc_usart_init
+  62              		.syntax unified
+  63              		.thumb
+  64              		.thumb_func
+  66              	dlw_nfc_usart_init:
+  67              	.LFB482:
+  68              		.file 1 "user_code/nfc_usart.c"
+   1:user_code/nfc_usart.c **** #include "nfc_usart.h"
+   2:user_code/nfc_usart.c **** /*
+   3:user_code/nfc_usart.c ****  * nfc_usart.c
+   4:user_code/nfc_usart.c ****  *
+   5:user_code/nfc_usart.c ****  *  Created on: 2025年8月8日
+   6:user_code/nfc_usart.c ****  *      Author: 27962
+   7:user_code/nfc_usart.c ****  */
+   8:user_code/nfc_usart.c **** uint32 get_data_len = 20;
+   9:user_code/nfc_usart.c **** uint8_t   get_data[20];
+  10:user_code/nfc_usart.c **** uint8_t   fifo_buffer[20];
+  11:user_code/nfc_usart.c **** uint8_t left = 0;
+  12:user_code/nfc_usart.c **** uint8_t right = 0;
+  13:user_code/nfc_usart.c **** zf_fifo_obj_struct uart_fifo;
+  14:user_code/nfc_usart.c **** extern int GL_IMU_Flag;
+  15:user_code/nfc_usart.c **** extern eulerangles    current_angles;                                  // 当前欧拉角
+  16:user_code/nfc_usart.c **** void dlw_nfc_usart_init(void)
+  17:user_code/nfc_usart.c **** {
+  69              		.loc 1 17 1
+  70              		.cfi_startproc
+  71              		@ args = 0, pretend = 0, frame = 0
+  72              		@ frame_needed = 0, uses_anonymous_args = 0
+  73 0000 08B5     		push	{r3, lr}
+  74              		.cfi_def_cfa_offset 8
+  75              		.cfi_offset 3, -8
+  76              		.cfi_offset 14, -4
+  18:user_code/nfc_usart.c ****     zf_fifo_init(&uart_fifo, FIFO_DATA_8BIT, fifo_buffer, sizeof(fifo_buffer));
+  77              		.loc 1 18 5
+  78 0002 1423     		movs	r3, #20
+  79 0004 034A     		ldr	r2, .L2
+  80 0006 0121     		movs	r1, #1
+  81 0008 0348     		ldr	r0, .L2+4
+  82 000a FFF7FEFF 		bl	zf_fifo_init
+  19:user_code/nfc_usart.c **** //    zf_uart_init(UART_2, 115200, UART2_TX_D8, UART2_RX_D7);
+  20:user_code/nfc_usart.c **** //    zf_uart_set_interrupt_callback(UART_2, NFC_uart_handler, &uart_fifo);
+  21:user_code/nfc_usart.c **** //    zf_uart_set_interrupt_config(UART_2, UART_INTERRUPT_CONFIG_RX_ENABLE);
+  22:user_code/nfc_usart.c **** }
+  83              		.loc 1 22 1
+  84 000e 00BF     		nop
+  85 0010 08BD     		pop	{r3, pc}
+  86              	.L3:
+  87 0012 00BF     		.align	2
+  88              	.L2:
+  89 0014 00000000 		.word	fifo_buffer
+  90 0018 00000000 		.word	uart_fifo
+  91              		.cfi_endproc
+  92              	.LFE482:
+  94              		.section	.rodata
+  95              		.align	2
+  96              	.LC0:
+  97 0000 6C656674 		.ascii	"left\000"
+  97      00
+  98 0005 000000   		.align	2
+  99              	.LC1:
+ 100 0008 72696768 		.ascii	"right\000"
+ 100      7400
+ 101              		.section	.text.dlw_nfc_usartdata_process,"ax",%progbits
+ 102              		.align	1
+ 103              		.p2align 4,,15
+ 104              		.global	dlw_nfc_usartdata_process
+ 105              		.syntax unified
+ 106              		.thumb
+ 107              		.thumb_func
+ 109              	dlw_nfc_usartdata_process:
+ 110              	.LFB483:
+  23:user_code/nfc_usart.c **** void dlw_nfc_usartdata_process(void)
+  24:user_code/nfc_usart.c **** {
+ 111              		.loc 1 24 1
+ 112              		.cfi_startproc
+ 113              		@ args = 0, pretend = 0, frame = 0
+ 114              		@ frame_needed = 0, uses_anonymous_args = 0
+ 115 0000 08B5     		push	{r3, lr}
+ 116              		.cfi_def_cfa_offset 8
+ 117              		.cfi_offset 3, -8
+ 118              		.cfi_offset 14, -4
+  25:user_code/nfc_usart.c **** //	zf_fifo_read_buffer(&uart_fifo, get_data, &get_data_len, FIFO_READ_WITH_CLEAN);
+  26:user_code/nfc_usart.c **** 	get_data_len =  debug_read_ring_buffer(get_data, 20);
+ 119              		.loc 1 26 18
+ 120 0002 1421     		movs	r1, #20
+ 121 0004 8248     		ldr	r0, .L17
+ 122 0006 FFF7FEFF 		bl	debug_read_ring_buffer
+ 123 000a 0346     		mov	r3, r0
+ 124              		.loc 1 26 15
+ 125 000c 814A     		ldr	r2, .L17+4
+ 126 000e 1360     		str	r3, [r2]
+  27:user_code/nfc_usart.c **** 	if (get_data_len)
+ 127              		.loc 1 27 6
+ 128 0010 804B     		ldr	r3, .L17+4
+ 129 0012 1B68     		ldr	r3, [r3]
+ 130              		.loc 1 27 5
+ 131 0014 002B     		cmp	r3, #0
+ 132 0016 06D0     		beq	.L5
+  28:user_code/nfc_usart.c **** 	{
+  29:user_code/nfc_usart.c **** 		debug_uart_write_buffer(get_data, &get_data_len);
+ 133              		.loc 1 29 3
+ 134 0018 7E49     		ldr	r1, .L17+4
+ 135 001a 7D48     		ldr	r0, .L17
+ 136 001c FFF7FEFF 		bl	debug_uart_write_buffer
+  30:user_code/nfc_usart.c **** 		get_data_len = 0;
+ 137              		.loc 1 30 16
+ 138 0020 7C4B     		ldr	r3, .L17+4
+ 139 0022 0022     		movs	r2, #0
+ 140 0024 1A60     		str	r2, [r3]
+ 141              	.L5:
+  31:user_code/nfc_usart.c **** 	}
+  32:user_code/nfc_usart.c **** 
+  33:user_code/nfc_usart.c **** 	if(strstr((const char*)get_data,"left") != NULL)
+ 142              		.loc 1 33 5
+ 143 0026 7C49     		ldr	r1, .L17+8
+ 144 0028 7948     		ldr	r0, .L17
+ 145 002a FFF7FEFF 		bl	strstr
+ 146 002e 0346     		mov	r3, r0
+ 147              		.loc 1 33 4
+ 148 0030 002B     		cmp	r3, #0
+ 149 0032 71D0     		beq	.L6
+  34:user_code/nfc_usart.c **** 	{
+  35:user_code/nfc_usart.c **** 		left = 1;
+ 150              		.loc 1 35 8
+ 151 0034 794B     		ldr	r3, .L17+12
+ 152 0036 0122     		movs	r2, #1
+ 153 0038 1A70     		strb	r2, [r3]
+  36:user_code/nfc_usart.c **** 		right = 0;
+ 154              		.loc 1 36 9
+ 155 003a 794B     		ldr	r3, .L17+16
+ 156 003c 0022     		movs	r2, #0
+ 157 003e 1A70     		strb	r2, [r3]
+  37:user_code/nfc_usart.c **** 		GPS_Flash_use();
+ 158              		.loc 1 37 3
+ 159 0040 FFF7FEFF 		bl	GPS_Flash_use
+  38:user_code/nfc_usart.c ****         ips200_clear();
+ 160              		.loc 1 38 9
+ 161 0044 7748     		ldr	r0, .L17+20
+ 162 0046 FFF7FEFF 		bl	display_interface_clear
+  39:user_code/nfc_usart.c **** 		zf_delay_ms(5000);
+ 163              		.loc 1 39 3
+ 164 004a 41F28830 		movw	r0, #5000
+ 165 004e FFF7FEFF 		bl	zf_delay_ms
+  40:user_code/nfc_usart.c **** 		virtual_north=gnss_get_two_points_azimuth(gnss_info.latitude,gnss_info.longitude,Target_point[0][
+ 166              		.loc 1 40 17
+ 167 0052 754B     		ldr	r3, .L17+24
+ 168 0054 93ED067B 		vldr.64	d7, [r3, #24]
+ 169 0058 734B     		ldr	r3, .L17+24
+ 170 005a 93ED086B 		vldr.64	d6, [r3, #32]
+ 171 005e 734B     		ldr	r3, .L17+28
+ 172 0060 93ED025B 		vldr.64	d5, [r3, #8]
+ 173 0064 714B     		ldr	r3, .L17+28
+ 174 0066 03F59863 		add	r3, r3, #1216
+ 175 006a 13ED024B 		vldr.64	d4, [r3, #-8]
+ 176 006e B0EE443B 		vmov.f64	d3, d4
+ 177 0072 B0EE452B 		vmov.f64	d2, d5
+ 178 0076 B0EE461B 		vmov.f64	d1, d6
+ 179 007a B0EE470B 		vmov.f64	d0, d7
+ 180 007e FFF7FEFF 		bl	gnss_get_two_points_azimuth
+ 181 0082 B0EE407B 		vmov.f64	d7, d0
+ 182 0086 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 183              		.loc 1 40 16
+ 184 008a 694B     		ldr	r3, .L17+32
+ 185 008c C3ED007A 		vstr.32	s15, [r3]
+  41:user_code/nfc_usart.c **** 		initial_imu_heading=current_angles.yaw;
+ 186              		.loc 1 41 37
+ 187 0090 684B     		ldr	r3, .L17+36
+ 188 0092 D3ED027A 		vldr.32	s15, [r3, #8]
+ 189 0096 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 190              		.loc 1 41 22
+ 191 009a 674B     		ldr	r3, .L17+40
+ 192 009c 83ED007B 		vstr.64	d7, [r3]
+  42:user_code/nfc_usart.c **** 		virtual_north=virtual_north-initial_imu_heading;
+ 193              		.loc 1 42 30
+ 194 00a0 634B     		ldr	r3, .L17+32
+ 195 00a2 D3ED007A 		vldr.32	s15, [r3]
+ 196 00a6 B7EEE76A 		vcvt.f64.f32	d6, s15
+ 197 00aa 634B     		ldr	r3, .L17+40
+ 198 00ac 93ED007B 		vldr.64	d7, [r3]
+ 199 00b0 36EE477B 		vsub.f64	d7, d6, d7
+ 200 00b4 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 201              		.loc 1 42 16
+ 202 00b8 5D4B     		ldr	r3, .L17+32
+ 203 00ba C3ED007A 		vstr.32	s15, [r3]
+  43:user_code/nfc_usart.c **** 		// 标准化偏移量
+  44:user_code/nfc_usart.c **** 		while (virtual_north >= 180.0) virtual_north -= 360.0;
+ 204              		.loc 1 44 9
+ 205 00be 09E0     		b	.L7
+ 206              	.L8:
+ 207              		.loc 1 44 48 discriminator 2
+ 208 00c0 5B4B     		ldr	r3, .L17+32
+ 209 00c2 D3ED007A 		vldr.32	s15, [r3]
+ 210 00c6 9FED5D7A 		vldr.32	s14, .L17+44
+ 211 00ca 77EEC77A 		vsub.f32	s15, s15, s14
+ 212 00ce 584B     		ldr	r3, .L17+32
+ 213 00d0 C3ED007A 		vstr.32	s15, [r3]
+ 214              	.L7:
+ 215              		.loc 1 44 24 discriminator 1
+ 216 00d4 564B     		ldr	r3, .L17+32
+ 217 00d6 D3ED007A 		vldr.32	s15, [r3]
+ 218              		.loc 1 44 9 discriminator 1
+ 219 00da 9FED597A 		vldr.32	s14, .L17+48
+ 220 00de F4EEC77A 		vcmpe.f32	s15, s14
+ 221 00e2 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 222 00e6 EBDA     		bge	.L8
+  45:user_code/nfc_usart.c **** 		while (virtual_north <-180.0) virtual_north += 360.0;
+ 223              		.loc 1 45 9
+ 224 00e8 09E0     		b	.L9
+ 225              	.L10:
+ 226              		.loc 1 45 47 discriminator 2
+ 227 00ea 514B     		ldr	r3, .L17+32
+ 228 00ec D3ED007A 		vldr.32	s15, [r3]
+ 229 00f0 9FED527A 		vldr.32	s14, .L17+44
+ 230 00f4 77EE877A 		vadd.f32	s15, s15, s14
+ 231 00f8 4D4B     		ldr	r3, .L17+32
+ 232 00fa C3ED007A 		vstr.32	s15, [r3]
+ 233              	.L9:
+ 234              		.loc 1 45 24 discriminator 1
+ 235 00fe 4C4B     		ldr	r3, .L17+32
+ 236 0100 D3ED007A 		vldr.32	s15, [r3]
+ 237              		.loc 1 45 9 discriminator 1
+ 238 0104 9FED4F7A 		vldr.32	s14, .L17+52
+ 239 0108 F4EEC77A 		vcmpe.f32	s15, s14
+ 240 010c F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 241 0110 EBD4     		bmi	.L10
+  46:user_code/nfc_usart.c **** 		GL_IMU_Flag=1; // 如果需要设置标志，可以在这里设置
+ 242              		.loc 1 46 14
+ 243 0112 4D4B     		ldr	r3, .L17+56
+ 244 0114 0122     		movs	r2, #1
+ 245 0116 1A60     		str	r2, [r3]
+ 246              	.L6:
+  47:user_code/nfc_usart.c **** 	}
+  48:user_code/nfc_usart.c **** 	if(strstr((const char*)get_data,"right") != NULL)
+ 247              		.loc 1 48 5
+ 248 0118 4C49     		ldr	r1, .L17+60
+ 249 011a 3D48     		ldr	r0, .L17
+ 250 011c FFF7FEFF 		bl	strstr
+ 251 0120 0346     		mov	r3, r0
+ 252              		.loc 1 48 4
+ 253 0122 002B     		cmp	r3, #0
+ 254 0124 71D0     		beq	.L16
+  49:user_code/nfc_usart.c **** 	{
+  50:user_code/nfc_usart.c **** 		left = 0;
+ 255              		.loc 1 50 8
+ 256 0126 3D4B     		ldr	r3, .L17+12
+ 257 0128 0022     		movs	r2, #0
+ 258 012a 1A70     		strb	r2, [r3]
+  51:user_code/nfc_usart.c **** 		right = 1;
+ 259              		.loc 1 51 9
+ 260 012c 3C4B     		ldr	r3, .L17+16
+ 261 012e 0122     		movs	r2, #1
+ 262 0130 1A70     		strb	r2, [r3]
+  52:user_code/nfc_usart.c **** 		GPS_Flash_use();
+ 263              		.loc 1 52 3
+ 264 0132 FFF7FEFF 		bl	GPS_Flash_use
+  53:user_code/nfc_usart.c ****         ips200_clear();
+ 265              		.loc 1 53 9
+ 266 0136 3B48     		ldr	r0, .L17+20
+ 267 0138 FFF7FEFF 		bl	display_interface_clear
+  54:user_code/nfc_usart.c **** 		zf_delay_ms(5000);
+ 268              		.loc 1 54 3
+ 269 013c 41F28830 		movw	r0, #5000
+ 270 0140 FFF7FEFF 		bl	zf_delay_ms
+  55:user_code/nfc_usart.c **** 		virtual_north=gnss_get_two_points_azimuth(gnss_info.latitude,gnss_info.longitude,Target_point[0][
+ 271              		.loc 1 55 17
+ 272 0144 384B     		ldr	r3, .L17+24
+ 273 0146 93ED067B 		vldr.64	d7, [r3, #24]
+ 274 014a 374B     		ldr	r3, .L17+24
+ 275 014c 93ED086B 		vldr.64	d6, [r3, #32]
+ 276 0150 364B     		ldr	r3, .L17+28
+ 277 0152 93ED025B 		vldr.64	d5, [r3, #8]
+ 278 0156 354B     		ldr	r3, .L17+28
+ 279 0158 03F59863 		add	r3, r3, #1216
+ 280 015c 13ED024B 		vldr.64	d4, [r3, #-8]
+ 281 0160 B0EE443B 		vmov.f64	d3, d4
+ 282 0164 B0EE452B 		vmov.f64	d2, d5
+ 283 0168 B0EE461B 		vmov.f64	d1, d6
+ 284 016c B0EE470B 		vmov.f64	d0, d7
+ 285 0170 FFF7FEFF 		bl	gnss_get_two_points_azimuth
+ 286 0174 B0EE407B 		vmov.f64	d7, d0
+ 287 0178 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 288              		.loc 1 55 16
+ 289 017c 2C4B     		ldr	r3, .L17+32
+ 290 017e C3ED007A 		vstr.32	s15, [r3]
+  56:user_code/nfc_usart.c **** 		initial_imu_heading=current_angles.yaw;
+ 291              		.loc 1 56 37
+ 292 0182 2C4B     		ldr	r3, .L17+36
+ 293 0184 D3ED027A 		vldr.32	s15, [r3, #8]
+ 294 0188 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 295              		.loc 1 56 22
+ 296 018c 2A4B     		ldr	r3, .L17+40
+ 297 018e 83ED007B 		vstr.64	d7, [r3]
+  57:user_code/nfc_usart.c **** 		virtual_north=virtual_north-initial_imu_heading;
+ 298              		.loc 1 57 30
+ 299 0192 274B     		ldr	r3, .L17+32
+ 300 0194 D3ED007A 		vldr.32	s15, [r3]
+ 301 0198 B7EEE76A 		vcvt.f64.f32	d6, s15
+ 302 019c 264B     		ldr	r3, .L17+40
+ 303 019e 93ED007B 		vldr.64	d7, [r3]
+ 304 01a2 36EE477B 		vsub.f64	d7, d6, d7
+ 305 01a6 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 306              		.loc 1 57 16
+ 307 01aa 214B     		ldr	r3, .L17+32
+ 308 01ac C3ED007A 		vstr.32	s15, [r3]
+  58:user_code/nfc_usart.c **** 		// 标准化偏移量
+  59:user_code/nfc_usart.c **** 		while (virtual_north >= 180.0) virtual_north -= 360.0;
+ 309              		.loc 1 59 9
+ 310 01b0 09E0     		b	.L12
+ 311              	.L13:
+ 312              		.loc 1 59 48 discriminator 2
+ 313 01b2 1F4B     		ldr	r3, .L17+32
+ 314 01b4 D3ED007A 		vldr.32	s15, [r3]
+ 315 01b8 9FED207A 		vldr.32	s14, .L17+44
+ 316 01bc 77EEC77A 		vsub.f32	s15, s15, s14
+ 317 01c0 1B4B     		ldr	r3, .L17+32
+ 318 01c2 C3ED007A 		vstr.32	s15, [r3]
+ 319              	.L12:
+ 320              		.loc 1 59 24 discriminator 1
+ 321 01c6 1A4B     		ldr	r3, .L17+32
+ 322 01c8 D3ED007A 		vldr.32	s15, [r3]
+ 323              		.loc 1 59 9 discriminator 1
+ 324 01cc 9FED1C7A 		vldr.32	s14, .L17+48
+ 325 01d0 F4EEC77A 		vcmpe.f32	s15, s14
+ 326 01d4 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 327 01d8 EBDA     		bge	.L13
+  60:user_code/nfc_usart.c **** 		while (virtual_north <-180.0) virtual_north += 360.0;
+ 328              		.loc 1 60 9
+ 329 01da 09E0     		b	.L14
+ 330              	.L15:
+ 331              		.loc 1 60 47 discriminator 2
+ 332 01dc 144B     		ldr	r3, .L17+32
+ 333 01de D3ED007A 		vldr.32	s15, [r3]
+ 334 01e2 9FED167A 		vldr.32	s14, .L17+44
+ 335 01e6 77EE877A 		vadd.f32	s15, s15, s14
+ 336 01ea 114B     		ldr	r3, .L17+32
+ 337 01ec C3ED007A 		vstr.32	s15, [r3]
+ 338              	.L14:
+ 339              		.loc 1 60 24 discriminator 1
+ 340 01f0 0F4B     		ldr	r3, .L17+32
+ 341 01f2 D3ED007A 		vldr.32	s15, [r3]
+ 342              		.loc 1 60 9 discriminator 1
+ 343 01f6 9FED137A 		vldr.32	s14, .L17+52
+ 344 01fa F4EEC77A 		vcmpe.f32	s15, s14
+ 345 01fe F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 346 0202 EBD4     		bmi	.L15
+  61:user_code/nfc_usart.c **** 		GL_IMU_Flag=1; // 如果需要设置标志，可以在这里设置
+ 347              		.loc 1 61 14
+ 348 0204 104B     		ldr	r3, .L17+56
+ 349 0206 0122     		movs	r2, #1
+ 350 0208 1A60     		str	r2, [r3]
+ 351              	.L16:
+  62:user_code/nfc_usart.c **** 	}
+  63:user_code/nfc_usart.c **** }
+ 352              		.loc 1 63 1
+ 353 020a 00BF     		nop
+ 354 020c 08BD     		pop	{r3, pc}
+ 355              	.L18:
+ 356 020e 00BF     		.align	2
+ 357              	.L17:
+ 358 0210 00000000 		.word	get_data
+ 359 0214 00000000 		.word	get_data_len
+ 360 0218 00000000 		.word	.LC0
+ 361 021c 00000000 		.word	left
+ 362 0220 00000000 		.word	right
+ 363 0224 00000000 		.word	display_interface_default_obj
+ 364 0228 00000000 		.word	gnss_info
+ 365 022c 00000000 		.word	Target_point
+ 366 0230 00000000 		.word	virtual_north
+ 367 0234 00000000 		.word	current_angles
+ 368 0238 00000000 		.word	initial_imu_heading
+ 369 023c 0000B443 		.word	1135869952
+ 370 0240 00003443 		.word	1127481344
+ 371 0244 000034C3 		.word	-1020002304
+ 372 0248 00000000 		.word	GL_IMU_Flag
+ 373 024c 08000000 		.word	.LC1
+ 374              		.cfi_endproc
+ 375              	.LFE483:
+ 377              		.text
+ 378              	.Letext0:
+ 379              		.file 2 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 380              		.file 3 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 381              		.file 4 "libraries/zf_common/zf_common_typedef.h"
+ 382              		.file 5 "C:/StellarStudio-7.0/SDKS/StellarESDK-1.7.0/Modules/Platform/MCU/include/sr5e1/sr5e1xx.h"
+ 383              		.file 6 "libraries/zf_common/zf_common_fifo.h"
+ 384              		.file 7 "libraries/zf_driver/zf_driver_gpio.h"
+ 385              		.file 8 "libraries/zf_driver/zf_driver_adc.h"
+ 386              		.file 9 "libraries/zf_driver/zf_driver_can.h"
+ 387              		.file 10 "libraries/zf_driver/zf_driver_encoder.h"
+ 388              		.file 11 "libraries/zf_driver/zf_driver_exti.h"
+ 389              		.file 12 "libraries/zf_driver/zf_driver_hrtim.h"
+ 390              		.file 13 "libraries/zf_driver/zf_driver_pwm.h"
+ 391              		.file 14 "libraries/zf_driver/zf_driver_spi.h"
+ 392              		.file 15 "libraries/zf_driver/zf_driver_uart.h"
+ 393              		.file 16 "libraries/zf_device/zf_device_imu_interface.h"
+ 394              		.file 17 "libraries/zf_device/zf_device_wireless_interface.h"
+ 395              		.file 18 "libraries/zf_device/zf_device_display_interface.h"
+ 396              		.file 19 "libraries/zf_device/zf_device_gnss.h"
+ 397              		.file 20 "user_code/quaternion.h"
+ 398              		.file 21 "user_code/GPS.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 nfc_usart.c
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:23     .data.get_data_len:00000000 get_data_len
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:20     .data.get_data_len:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:30     .bss.get_data:00000000 get_data
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:27     .bss.get_data:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:37     .bss.fifo_buffer:00000000 fifo_buffer
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:34     .bss.fifo_buffer:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:43     .bss.left:00000000 left
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:44     .bss.left:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:49     .bss.right:00000000 right
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:50     .bss.right:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:56     .bss.uart_fifo:00000000 uart_fifo
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:53     .bss.uart_fifo:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:59     .text.dlw_nfc_usart_init:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:66     .text.dlw_nfc_usart_init:00000000 dlw_nfc_usart_init
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:89     .text.dlw_nfc_usart_init:00000014 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:95     .rodata:00000000 $d
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:102    .text.dlw_nfc_usartdata_process:00000000 $t
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:109    .text.dlw_nfc_usartdata_process:00000000 dlw_nfc_usartdata_process
+C:\Users\86155\AppData\Local\Temp\ccISoLUv.s:358    .text.dlw_nfc_usartdata_process:00000210 $d
+                           .group:00000000 wm4.0.1ea29c7543256e0887205fa7f8c557c8
+                           .group:00000000 wm4._newlib_version.h.4.bfdf54b0af045d4a71376ae00f63a22c
+                           .group:00000000 wm4.newlib.h.18.1c9fedb6b3cd797cff253cc0fd593ef2
+                           .group:00000000 wm4.ieeefp.h.77.2bc94c1d1ed8b02df437510a04ac1e45
+                           .group:00000000 wm4.features.h.22.026edb2397769f4ae13f35900dbdb560
+                           .group:00000000 wm4.config.h.224.c701144a7b0518c6ee9b9b5465b79f81
+                           .group:00000000 wm4._ansi.h.31.de524f58584151836e90d8620a16f8e8
+                           .group:00000000 wm4.stdio.h.31.7c0e28c411445f3f9c5b11accf882760
+                           .group:00000000 wm4._default_types.h.6.959254cf5f09734ea7516c89e8bb21bd
+                           .group:00000000 wm4.stddef.h.181.c3f52a3b0f4c288bddb5dda1562858e2
+                           .group:00000000 wm4.cdefs.h.49.a54b2d5c07711bc7320a3fea9f12cb56
+                           .group:00000000 wm4.stddef.h.39.c161261b198ee3a963897077fd6fa59f
+                           .group:00000000 wm4.stdarg.h.34.3a23a216c0c293b3d2ea2e89281481e6
+                           .group:00000000 wm4._types.h.20.dd0d04dca3800a0d2a6129b87f3adbb2
+                           .group:00000000 wm4.stddef.h.155.3588ebfdd1e8c7ede80509bb9c3b8009
+                           .group:00000000 wm4._types.h.127.34941de1b2539d59d5cac00e0dd27a45
+                           .group:00000000 wm4.reent.h.17.e292bf8b0bec6c96e131a54347145a30
+                           .group:00000000 wm4.lock.h.2.1461d1fff82dffe8bfddc23307f6484f
+                           .group:00000000 wm4.reent.h.77.dcd6129ff07fe81bd5636db29abe53b2
+                           .group:00000000 wm4.types.h.40.8b6acba56cefbb11746718204edc8f5e
+                           .group:00000000 wm4._stdint.h.10.c24fa3af3bc1706662bb5593a907e841
+                           .group:00000000 wm4._endian.h.31.65a10590763c3dde1ac4a7f66d7d4891
+                           .group:00000000 wm4.endian.h.9.49f3a4695c1b61e8a0808de3c4a106cb
+                           .group:00000000 wm4._timeval.h.32.bec3221fa7a9bb0bdde696c9c57e47d2
+                           .group:00000000 wm4.timespec.h.41.d855182eb0e690443ab8651bcedca6e1
+                           .group:00000000 wm4.select.h.19.40cd3f2bfc456b193b790c2754690ebf
+                           .group:00000000 wm4.types.h.51.5571ec98f267d17d3c670b7a3ba33afa
+                           .group:00000000 wm4.sched.h.22.c60982713a5c428609783c78f9c78d95
+                           .group:00000000 wm4._pthreadtypes.h.36.fcee9961c35163dde6267ef772ad1972
+                           .group:00000000 wm4.stdio.h.2.4aa87247282eca6c8f36f9de33d8df1a
+                           .group:00000000 wm4.stdio.h.81.932d0c162786b883f622b8d05c120c78
+                           .group:00000000 wm4._intsup.h.10.48bafbb683905c4daa4565a85aeeb264
+                           .group:00000000 wm4.stdint.h.23.d53047a68f4a85177f80b422d52785ed
+                           .group:00000000 wm4.string.h.8.c4b8571ce60dff2817f43fec8b86aecd
+                           .group:00000000 wm4.stddef.h.155.ba788add86a0e365f264484f110c3c29
+                           .group:00000000 wm4.sr5e1xx.h.22.e5c808533cc52ed19fb0830cd7d98924
+                           .group:00000000 wm4.cmsis_version.h.32.0f826810625204eca22a19868bdc7586
+                           .group:00000000 wm4.core_cm7.h.66.8ab2de36917d6fcae18019067fda13e0
+                           .group:00000000 wm4.cmsis_gcc.h.26.498d0ad17a45fc9ef20fdc01caf02259
+                           .group:00000000 wm4.core_cm7.h.174.43edb295ecdaadad738f48ba6011ffad
+                           .group:00000000 wm4.mpu_armv7.h.32.83326921a797fa9d6f70449916b4b839
+                           .group:00000000 wm4.cachel1_armv7.h.32.abd77761a989e008b0c60891114a33c7
+                           .group:00000000 wm4.SR5E1_ADC.h.14.21608e6aff125ba995dd767d6d8dc311
+                           .group:00000000 wm4.SR5E1_CEM.h.14.01fe5742c8f1ae35b1f3af05932f702e
+                           .group:00000000 wm4.SR5E1_CMU.h.14.2617b38b159abe38028862394531e06d
+                           .group:00000000 wm4.SR5E1_COMP.h.14.4b6fdfe4f5f7fd9bedf3a99b98bdf4cd
+                           .group:00000000 wm4.SR5E1_CORDIC.h.14.354fbf7c9eaf6963d38eaa25cf28ffe8
+                           .group:00000000 wm4.SR5E1_CRC.h.14.c64d0f7767671ddb92e9ead0a1162100
+                           .group:00000000 wm4.SR5E1_DAC.h.14.8c26a0ff04b0cfeb55306cc3f22187b8
+                           .group:00000000 wm4.SR5E1_DBGMCU.h.14.427df893d53a8044654f017ba01c25ed
+                           .group:00000000 wm4.SR5E1_DMA.h.14.a7f9a92f844b40a86965798c2e64240b
+                           .group:00000000 wm4.SR5E1_DMAMUX.h.14.471b3b4dfd4d41515f1df49493698866
+                           .group:00000000 wm4.SR5E1_EXTI.h.14.a325ea3fe89cd84894660551c33241ea
+                           .group:00000000 wm4.SR5E1_FCCU.h.14.0ebf0f0f36e079d28613ad2c80e17e23
+                           .group:00000000 wm4.SR5E1_FDCAN.h.14.ac57101fad5dbc798bfb93f34c899de7
+                           .group:00000000 wm4.SR5E1_FLASH_REG_ITF.h.14.d23d1d44923f9b20b8c8fdb51d66aefd
+                           .group:00000000 wm4.SR5E1_GPIO.h.14.1c84071e130d7c64b62470ab0e18a1f1
+                           .group:00000000 wm4.SR5E1_HRTIM.h.24.03932387d2522e6bd5c772a4edaf2f5d
+                           .group:00000000 wm4.SR5E1_HSEM.h.14.cbe70eee519f01b16452c3f8c99d8df1
+                           .group:00000000 wm4.SR5E1_I2C.h.14.350ba3e0f4fd57828457efa80135c36c
+                           .group:00000000 wm4.SR5E1_IMA.h.14.62b7088985ab2b7ce9b030a02daa1f7d
+                           .group:00000000 wm4.SR5E1_IWDG.h.14.20b7c5f05cf7ae94464c360d7af3660d
+                           .group:00000000 wm4.SR5E1_MEMU.h.14.04bad7ae4c52ce334a4fc900aad2ae5b
+                           .group:00000000 wm4.SR5E1_NVM_CTRL.h.14.5f442617f0628d4f16258f211c614ef9
+                           .group:00000000 wm4.SR5E1_PLLDIG.h.14.bd87a8e6917eee17dae2f312c8e5fa53
+                           .group:00000000 wm4.SR5E1_PMC_DIG.h.14.54173b566c6656344766ec4ef46c9281
+                           .group:00000000 wm4.SR5E1_RCC.h.14.56734803c71534de286e793a53649740
+                           .group:00000000 wm4.SR5E1_RTC.h.14.47037cbc7d8175dbf2be1dc0bb955e3f
+                           .group:00000000 wm4.SR5E1_SD_ADC.h.14.552b97d0b8f3c1fd4df6d8964b2f1a80
+                           .group:00000000 wm4.SR5E1_SMPU.h.14.8ce5bb6d5d7c579cd725f492f46e9085
+                           .group:00000000 wm4.SR5E1_SPI.h.14.42d52112e540f85ade4d9135f8b87d72
+                           .group:00000000 wm4.SR5E1_SSCM.h.14.8e6a2ad0ce5fca422fc3d69939b6125b
+                           .group:00000000 wm4.SR5E1_SYSCFG.h.14.02b969490118ce4069914b5e94f7ca65
+                           .group:00000000 wm4.SR5E1_TDM.h.14.a40ed7928cad243a57fd233fccf01ad2
+                           .group:00000000 wm4.SR5E1_TIM.h.14.f17572f4c16f3f152b8164ad25c34f5b
+                           .group:00000000 wm4.SR5E1_UART.h.14.eec3ab82b02b3bdb3de500483675b83f
+                           .group:00000000 wm4.SR5E1_WWDG.h.14.59b45efc70e442cc6ef03702aad4ad88
+                           .group:00000000 wm4.stdbool.h.29.07dce69c3b78884144b7f7bd19483461
+                           .group:00000000 wm4.typedefs.h.36.07fe3956b4e751037cfee70edcd0b397
+                           .group:00000000 wm4.irq_numbers.h.38.6294b95aed1bf7b3a2cda0eed8ce8f57
+                           .group:00000000 wm4.regs.h.23.2ac145b4f57126d16daed5fbd86d99c6
+                           .group:00000000 wm4.stdarg.h.31.3fa7b8f6daaa31edd1696c08c77f2a73
+                           .group:00000000 wm4.stdlib.h.13.4ed386f5c1a80d71e72172885d946ef2
+                           .group:00000000 wm4.alloca.h.8.dfc0c703c47ec3e69746825b17d9e66d
+                           .group:00000000 wm4.stdlib.h.56.f4862cfbf4363a1db01842d5bdf72c18
+                           .group:00000000 wm4.zf_common_typedef.h.47.8c368673885c9d07221c267e15ab1069
+                           .group:00000000 wm4.zf_common_debug.h.33.ccdd5203a5e510a964ba4c22faca44c8
+                           .group:00000000 wm4.zf_common_fifo.h.33.e14e643902e26e4e65437b5b20e82793
+                           .group:00000000 wm4.zf_common_function.h.33.02bbfb055e8ee322bc4f8b14ea195da2
+                           .group:00000000 wm4.zf_common_memory.h.33.d43647290a4d62164ff2ec77cadb89d8
+                           .group:00000000 wm4.saradc.h.25.e5a70aef9ec4fddf35f2b7cc0c9cf1bc
+                           .group:00000000 wm4.gpio.h.25.d41a0c19fda8c2de42e666afb48ec15a
+                           .group:00000000 wm4.zf_driver_gpio.h.65.5a4d2084c62fed7c22fdca02e748c198
+                           .group:00000000 wm4.zf_driver_adc.h.64.349fb433626b42172b0e0fee038428ca
+                           .group:00000000 wm4.can.h.25.3cfccb6c630ada4f656cab597e231e58
+                           .group:00000000 wm4.dmamux.h.25.337aea179f6dbcc87c52aae26d38f76e
+                           .group:00000000 wm4.clock_cfg.h.24.0aed3cee9ecce947225a304181294191
+                           .group:00000000 wm4.clock.h.37.80236c5607fdd9eb9275e5111a4191c3
+                           .group:00000000 wm4.irq.h.37.78714f25754c8b09d1428599101f6cc7
+                           .group:00000000 wm4.dma.h.40.f77dd217a06ceba13a3cfdd4102a73c1
+                           .group:00000000 wm4.zf_driver_can.h.67.fd10d2fa867eb54a54d4b57027d73a60
+                           .group:00000000 wm4.tim.h.25.6e7ad96569e77a70a68b9b4cc59f54f2
+                           .group:00000000 wm4.zf_driver_timer.h.33.8df253b6990d9861816977209fb11e90
+                           .group:00000000 wm4.zf_driver_encoder.h.57.7e32999f25354fac086ca226b0c630d4
+                           .group:00000000 wm4.exti.h.25.21597c35d9630b0985ce88d2c41f4ea4
+                           .group:00000000 wm4.zf_driver_exti.h.59.1b02b8083e5295ef5baaf83905d59395
+                           .group:00000000 wm4.ssd_types.h.29.b861f4e6d39d333f931bfc05b964cb1c
+                           .group:00000000 wm4.ssd_C55.h.37.dad650468a97d71aff4dd65ca085590f
+                           .group:00000000 wm4.zf_driver_flash.h.59.db93fe574c35ea9e79030063fbb35a13
+                           .group:00000000 wm4.hrtim.h.25.1601aea9d4a0da1de8252dc444355251
+                           .group:00000000 wm4.zf_driver_hrtim.h.64.cd8d2bf3bf1c471ea59d9c61e4a721d7
+                           .group:00000000 wm4.zf_driver_interrupt.h.33.2c3660dcc36cb090bd75b8f180c14f27
+                           .group:00000000 wm4.zf_driver_pit.h.33.834ac720a62e09d5603a9557331e9049
+                           .group:00000000 wm4.zf_driver_pwm.h.33.7d80487064ca712231a453396685a551
+                           .group:00000000 wm4.zf_driver_rcc.h.33.4c228cf40a79e1b974b30d5a9a3a77a7
+                           .group:00000000 wm4.zf_driver_soft_iic.h.33.9067bd298084134f63c61c075f95fa2b
+                           .group:00000000 wm4.zf_driver_soft_spi.h.33.a938287c023905d97cafe56e4be63674
+                           .group:00000000 wm4.zf_driver_spi.h.62.950b1f52ed365034df2907601137b455
+                           .group:00000000 wm4.zf_driver_system.h.33.370922a9681b47d575d2c83d302a180b
+                           .group:00000000 wm4.zf_driver_uart.h.70.ffcf3694337ad0b4066179f1abd5d668
+                           .group:00000000 wm4.zf_device_imu_interface.h.40.344a2c93b973b58cee305ff406fc3e84
+                           .group:00000000 wm4.zf_device_imu660rb.h.37.b47c39afb47c89c2c82bd28e76457042
+                           .group:00000000 wm4.zf_device_imu963ra.h.37.e773f164af6f72dd1b0b6c1242bf99b4
+                           .group:00000000 wm4.zf_device_wireless_interface.h.40.da0a07f107014cb0888a26f281971a5b
+                           .group:00000000 wm4.zf_device_display_interface.h.79.d8df25e52245efbd97fd6415c8db0a72
+                           .group:00000000 wm4.zf_device_ips200.h.37.957fc5e8b291701a6f6b47207b045b77
+                           .group:00000000 wm4.math.h.13.b6595ad277a643a6127e1a4515a98f91
+                           .group:00000000 wm4.zf_device_gnss.h.66.39fe53860d2d190725612db126de8287
+                           .group:00000000 wm4.zf_device_key.h.45.b12f9096d8cc68f085b8fe9fe5b730db
+                           .group:00000000 wm4.zf_device_uart_receiver.h.43.9ac9496dcaa4780ef86d21fa439379b4
+                           .group:00000000 wm4.servo.h.9.527c6b66c6bfd7e85b3aa357b7b41a9a
+                           .group:00000000 wm4.key.h.15.a62367548c3fda3e4e7a36cd730b6143
+                           .group:00000000 wm4.quaternion.h.15.d2ef326a4e7ac21d4b5d449e696cdef0
+
+UNDEFINED SYMBOLS
+zf_fifo_init
+debug_read_ring_buffer
+debug_uart_write_buffer
+strstr
+GPS_Flash_use
+display_interface_clear
+zf_delay_ms
+gnss_get_two_points_azimuth
+display_interface_default_obj
+gnss_info
+Target_point
+virtual_north
+current_angles
+initial_imu_heading
+GL_IMU_Flag

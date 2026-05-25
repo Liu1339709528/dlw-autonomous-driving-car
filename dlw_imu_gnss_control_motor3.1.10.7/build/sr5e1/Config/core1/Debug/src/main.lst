@@ -1,0 +1,1667 @@
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"main.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.data.channel_ptr,"aw"
+  19              		.align	2
+  22              	channel_ptr:
+  23 0000 00000000 		.word	uart_receiver
+  24              		.global	imu_data
+  25              		.section	.bss.imu_data,"aw",%nobits
+  26              		.align	2
+  29              	imu_data:
+  30 0000 00000000 		.space	12
+  30      00000000 
+  30      00000000 
+  31              		.global	imu_physical_data
+  32              		.section	.bss.imu_physical_data,"aw",%nobits
+  33              		.align	2
+  36              	imu_physical_data:
+  37 0000 00000000 		.space	24
+  37      00000000 
+  37      00000000 
+  37      00000000 
+  37      00000000 
+  38              		.global	imu_pid
+  39              		.section	.bss.imu_pid,"aw",%nobits
+  40              		.align	2
+  43              	imu_pid:
+  44 0000 00000000 		.space	36
+  44      00000000 
+  44      00000000 
+  44      00000000 
+  44      00000000 
+  45              		.global	current_angles
+  46              		.section	.bss.current_angles,"aw",%nobits
+  47              		.align	2
+  50              	current_angles:
+  51 0000 00000000 		.space	16
+  51      00000000 
+  51      00000000 
+  51      00000000 
+  52              		.global	key
+  53              		.section	.bss.key,"aw",%nobits
+  56              	key:
+  57 0000 00       		.space	1
+  58              		.global	calibration_done
+  59              		.section	.bss.calibration_done,"aw",%nobits
+  62              	calibration_done:
+  63 0000 00       		.space	1
+  64              		.section	.rodata
+  65              		.align	2
+  66              	.LC0:
+  67 0000 63617220 		.ascii	"car run:\000"
+  67      72756E3A 
+  67      00
+  68 0009 000000   		.align	2
+  69              	.LC1:
+  70 000c 6E657874 		.ascii	"next lat/lot:\000"
+  70      206C6174 
+  70      2F6C6F74 
+  70      3A00
+  71 001a 0000     		.align	2
+  72              	.LC2:
+  73 001c 6E6F7720 		.ascii	"now lat/lot:\000"
+  73      6C61742F 
+  73      6C6F743A 
+  73      00
+  74 0029 000000   		.align	2
+  75              	.LC3:
+  76 002c 676F2061 		.ascii	"go angle:\000"
+  76      6E676C65 
+  76      3A00
+  77 0036 0000     		.align	2
+  78              	.LC4:
+  79 0038 76697274 		.ascii	"virtual_north:\000"
+  79      75616C5F 
+  79      6E6F7274 
+  79      683A00
+  80 0047 00       		.align	2
+  81              	.LC5:
+  82 0048 63757272 		.ascii	"current_yaw:\000"
+  82      656E745F 
+  82      7961773A 
+  82      00
+  83 0055 000000   		.align	2
+  84              	.LC6:
+  85 0058 696D755F 		.ascii	"imu_yaw:\000"
+  85      7961773A 
+  85      00
+  86 0061 000000   		.align	2
+  87              	.LC7:
+  88 0064 72656D6F 		.ascii	"remote control\000"
+  88      74652063 
+  88      6F6E7472 
+  88      6F6C00
+  89              		.section	.text.main,"ax",%progbits
+  90              		.align	1
+  91              		.p2align 4,,15
+  92              		.global	main
+  93              		.syntax unified
+  94              		.thumb
+  95              		.thumb_func
+  97              	main:
+  98              	.LFB482:
+  99              		.file 1 "src/main.c"
+   1:src/main.c    **** /**************************************************************************************************
+   2:src/main.c    **** * Stellar-SR5E1E3 Opensource Library 即（Stellar-SR5E1E3 开源库）是一个基于官方 SDK �
+   3:src/main.c    **** * Copyright (c) 2022 SEEKFREE 逐飞科技
+   4:src/main.c    **** *
+   5:src/main.c    **** * 本文件是 Stellar-SR5E1E3 开源库的一部分
+   6:src/main.c    **** *
+   7:src/main.c    **** * Stellar-SR5E1E3 开源库 是免费软件
+   8:src/main.c    **** * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公
+   9:src/main.c    **** * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/�
+  10:src/main.c    **** *
+  11:src/main.c    **** * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+  12:src/main.c    **** * 甚至没有隐含的适销性或适合特定用途的保证
+  13:src/main.c    **** * 更多细节请参见 GPL
+  14:src/main.c    **** *
+  15:src/main.c    **** * 您应该在收到本开源库的同时收到一份 GPL 的副本
+  16:src/main.c    **** * 如果没有，请参阅<https://www.gnu.org/licenses/>
+  17:src/main.c    **** *
+  18:src/main.c    **** * 额外注明：
+  19:src/main.c    **** * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+  20:src/main.c    **** * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+  21:src/main.c    **** * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+  22:src/main.c    **** * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（
+  23:src/main.c    **** *
+  24:src/main.c    **** * 文件名称          main
+  25:src/main.c    **** * 公司名称          成都逐飞科技有限公司
+  26:src/main.c    **** * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+  27:src/main.c    **** * 开发环境          StellarStudio 7.0.0
+  28:src/main.c    **** * 适用平台          Stellar-SR5E1E3
+  29:src/main.c    **** * 店铺链接          https://www.seekfree.cn/
+  30:src/main.c    **** ***************************************************************************************************
+  31:src/main.c    **** 
+  32:src/main.c    **** #include "zf_libraries_headfile.h"
+  33:src/main.c    **** 
+  34:src/main.c    **** #include "led.h"
+  35:src/main.c    **** #include "moto.h"
+  36:src/main.c    **** #include "servo.h"
+  37:src/main.c    **** #include "key.h"
+  38:src/main.c    **** #include "remote_control.h"
+  39:src/main.c    **** #include "quaternion.h"
+  40:src/main.c    **** #include "imu660rb.h"
+  41:src/main.c    **** #include "pid.h"
+  42:src/main.c    **** #include "GPS.h"
+  43:src/main.c    **** #include "encoder.h"
+  44:src/main.c    **** #include "nfc_usart.h"
+  45:src/main.c    **** // ****************************** 测试说明 ***************************
+  46:src/main.c    **** // PE4------>电机驱动PWM引脚
+  47:src/main.c    **** // PE2------>电机驱动DIR引脚
+  48:src/main.c    **** // PD13----->调试用示波器引脚
+  49:src/main.c    **** // PI0------>舵机信号引脚
+  50:src/main.c    **** // PG15----->绿色灯引脚
+  51:src/main.c    **** // PG14----->红色灯引脚
+  52:src/main.c    **** // PH0------>蓝色灯引脚
+  53:src/main.c    **** // PA6------>遥控器接收数据引脚
+  54:src/main.c    **** // ******************************************************************
+  55:src/main.c    **** 
+  56:src/main.c    **** #define MAX_DUTY                       (30)                     // 最大 MAX_DUTY% 占空比
+  57:src/main.c    **** 
+  58:src/main.c    **** static const uint16 *channel_ptr  =   uart_receiver.channel;    // 指向遥控器存储数据区�
+  59:src/main.c    **** 
+  60:src/main.c    **** extern int16 gyro_bias_x;                                       // 陀螺仪零偏值变量
+  61:src/main.c    **** extern int16 gyro_bias_y;                                       // 陀螺仪零偏值变量
+  62:src/main.c    **** extern int16 gyro_bias_z;                                       // 陀螺仪零偏值变量
+  63:src/main.c    **** extern uint8_t left;											//左方向发车
+  64:src/main.c    **** extern uint8_t right;											//右方向发车
+  65:src/main.c    **** 
+  66:src/main.c    **** imu660rb_measurement_data_struct imu_data[2]          = {0};    // IMU原始数据
+  67:src/main.c    **** imu660rb_physical_data_struct    imu_physical_data[2] = {0};    // IMU物理量数据（物理量�
+  68:src/main.c    **** pid_controller imu_pid;                                         // 航向角pid控制器
+  69:src/main.c    **** eulerangles    current_angles;                                  // 当前欧拉角
+  70:src/main.c    **** uint8 key = 0;                                                  // 键值
+  71:src/main.c    **** uint8 calibration_done;                                         // 校准标志
+  72:src/main.c    **** 
+  73:src/main.c    **** //-------------------------------------------------------------------------------------------------
+  74:src/main.c    **** // 函数简介     主函数
+  75:src/main.c    **** // 参数说明     void            无参数
+  76:src/main.c    **** // 返回参数     void            无返回值
+  77:src/main.c    **** // 使用示例
+  78:src/main.c    **** // 备注信息
+  79:src/main.c    **** //-------------------------------------------------------------------------------------------------
+  80:src/main.c    **** int main (void)
+  81:src/main.c    **** {
+ 100              		.loc 1 81 1
+ 101              		.cfi_startproc
+ 102              		@ args = 0, pretend = 0, frame = 56
+ 103              		@ frame_needed = 0, uses_anonymous_args = 0
+ 104 0000 00B5     		push	{lr}
+ 105              		.cfi_def_cfa_offset 4
+ 106              		.cfi_offset 14, -4
+ 107 0002 91B0     		sub	sp, sp, #68
+ 108              		.cfi_def_cfa_offset 72
+  82:src/main.c    ****     zf_system_clock_init(SYSTEM_CLOCK_300M);                         // 初始化芯片时钟 工�
+ 109              		.loc 1 82 5
+ 110 0004 D048     		ldr	r0, .L23+56
+ 111 0006 FFF7FEFF 		bl	zf_system_clock_init
+  83:src/main.c    ****     debug_init();                                                    // 初始化默认 Debug UART
+ 112              		.loc 1 83 5
+ 113 000a FFF7FEFF 		bl	debug_init
+  84:src/main.c    **** 
+  85:src/main.c    **** 
+  86:src/main.c    ****     float pid_output = 0;                     //...................................................
+ 114              		.loc 1 86 11
+ 115 000e 4FF00003 		mov	r3, #0
+ 116 0012 0993     		str	r3, [sp, #36]	@ float
+  87:src/main.c    ****     int gnns_sum = 1;
+ 117              		.loc 1 87 9
+ 118 0014 0123     		movs	r3, #1
+ 119 0016 0F93     		str	r3, [sp, #60]
+  88:src/main.c    ****     uint8 GL_CRC_state = 0;
+ 120              		.loc 1 88 11
+ 121 0018 0023     		movs	r3, #0
+ 122 001a 8DF82330 		strb	r3, [sp, #35]
+  89:src/main.c    ****     int16   encoder_data[2];
+  90:src/main.c    ****     uint8 gnns_sum_flag = 1,i=0;										 //左发车查找坐标标志位,i下标
+ 123              		.loc 1 90 11
+ 124 001e 0123     		movs	r3, #1
+ 125 0020 8DF83B30 		strb	r3, [sp, #59]
+ 126              		.loc 1 90 29
+ 127 0024 0023     		movs	r3, #0
+ 128 0026 8DF83A30 		strb	r3, [sp, #58]
+  91:src/main.c    ****     uint16  remote_ch4= uart_receiver.channel[3];                    // 遥控器SWB按键数据通
+ 129              		.loc 1 91 13
+ 130 002a C84B     		ldr	r3, .L23+60
+ 131 002c DB88     		ldrh	r3, [r3, #6]	@ movhi
+ 132 002e ADF82030 		strh	r3, [sp, #32]	@ movhi
+  92:src/main.c    ****     double current_yaw;                                              // 当前航向角
+  93:src/main.c    ****     double current_distance;                                         // 当前坐标到目标点的
+  94:src/main.c    ****     double current_yaw_180;                                          // 当前航向角(-180-180)
+  95:src/main.c    ****     float sudo=0;
+ 133              		.loc 1 95 11
+ 134 0032 4FF00003 		mov	r3, #0
+ 135 0036 0793     		str	r3, [sp, #28]	@ float
+  96:src/main.c    ****     dlw_led_init();                                                  // LED初始化
+ 136              		.loc 1 96 5
+ 137 0038 FFF7FEFF 		bl	dlw_led_init
+  97:src/main.c    ****     dlw_key_init();                                                  // 按键初始化
+ 138              		.loc 1 97 5
+ 139 003c FFF7FEFF 		bl	dlw_key_init
+  98:src/main.c    ****     dlw_moto_pwm_init();                                             // 电机初始化
+ 140              		.loc 1 98 5
+ 141 0040 FFF7FEFF 		bl	dlw_moto_pwm_init
+  99:src/main.c    ****     dlw_servo_init(PWM_TIM8_CH1_I0, SERVO_MED_PULSE);                // 舵机初始化
+ 142              		.loc 1 99 5
+ 143 0044 40F2EE21 		movw	r1, #750
+ 144 0048 C148     		ldr	r0, .L23+64
+ 145 004a FFF7FEFF 		bl	dlw_servo_init
+ 100:src/main.c    ****     dlw_remote_control_init();                                       // 遥控器初始化
+ 146              		.loc 1 100 5
+ 147 004e FFF7FEFF 		bl	dlw_remote_control_init
+ 101:src/main.c    ****     dlw_imu660rb_init();                                             // IMU初始化
+ 148              		.loc 1 101 5
+ 149 0052 FFF7FEFF 		bl	dlw_imu660rb_init
+ 102:src/main.c    ****     dlw_imu660rb_calibration();                                      // IMU校准
+ 150              		.loc 1 102 5
+ 151 0056 FFF7FEFF 		bl	dlw_imu660rb_calibration
+ 103:src/main.c    ****     quaternion_init();                                               // 四元数初始化
+ 152              		.loc 1 103 5
+ 153 005a FFF7FEFF 		bl	quaternion_init
+ 104:src/main.c    ****     pid_init(&imu_pid);                                              // pid初始化
+ 154              		.loc 1 104 5
+ 155 005e BD48     		ldr	r0, .L23+68
+ 156 0060 FFF7FEFF 		bl	pid_init
+ 105:src/main.c    ****     pid_set_limits(&imu_pid, -100.0f, 100.0f);                       // 输出限制在±100之间
+ 157              		.loc 1 105 5
+ 158 0064 DFEDBC0A 		vldr.32	s1, .L23+72
+ 159 0068 9FEDBC0A 		vldr.32	s0, .L23+76
+ 160 006c B948     		ldr	r0, .L23+68
+ 161 006e FFF7FEFF 		bl	pid_set_limits
+ 106:src/main.c    ****     ips200_init(IPS200_TYPE_SPI);                                    // 屏幕初始化
+ 162              		.loc 1 106 5
+ 163 0072 0020     		movs	r0, #0
+ 164 0074 FFF7FEFF 		bl	ips200_init
+ 107:src/main.c    ****     dlw_gps_init();                                                  // RTK初始化
+ 165              		.loc 1 107 5
+ 166 0078 FFF7FEFF 		bl	dlw_gps_init
+ 108:src/main.c    ****     dlw_nfc_usart_init();											 //NFC串口初始化
+ 167              		.loc 1 108 5
+ 168 007c FFF7FEFF 		bl	dlw_nfc_usart_init
+ 109:src/main.c    ****     encoder_PID_init(45,0.1,0);											//编码器初始化
+ 169              		.loc 1 109 5
+ 170 0080 9FEDB71A 		vldr.32	s2, .L23+80
+ 171 0084 DFEDB70A 		vldr.32	s1, .L23+84
+ 172 0088 9FEDB70A 		vldr.32	s0, .L23+88
+ 173 008c FFF7FEFF 		bl	encoder_PID_init
+ 110:src/main.c    ****     zf_encoder_init(ENCODER_TIM2, ENCODER_MODE_QUADRATURE, ENCODER_TIM2_A_PLUS_D14, ENCODER_TIM2_B_
+ 174              		.loc 1 110 5
+ 175 0090 B64B     		ldr	r3, .L23+92
+ 176 0092 B74A     		ldr	r2, .L23+96
+ 177 0094 0121     		movs	r1, #1
+ 178 0096 0220     		movs	r0, #2
+ 179 0098 FFF7FEFF 		bl	zf_encoder_init
+ 111:src/main.c    ****     zf_pit_ms_init(PIT_TIM7, 500, rgb_flicker_handler, NULL);        // LED灯专属定时器中断
+ 180              		.loc 1 111 5
+ 181 009c 0023     		movs	r3, #0
+ 182 009e B54A     		ldr	r2, .L23+100
+ 183 00a0 4FF4FA71 		mov	r1, #500
+ 184 00a4 0920     		movs	r0, #9
+ 185 00a6 FFF7FEFF 		bl	zf_pit_ms_init
+ 112:src/main.c    ****     zf_pit_ms_init(PIT_TIM6, 5, imu_pit_handler, imu_data);          // imu定时器中断初始化
+ 186              		.loc 1 112 5
+ 187 00aa B34B     		ldr	r3, .L23+104
+ 188 00ac B34A     		ldr	r2, .L23+108
+ 189 00ae 0521     		movs	r1, #5
+ 190 00b0 0820     		movs	r0, #8
+ 191 00b2 FFF7FEFF 		bl	zf_pit_ms_init
+ 113:src/main.c    ****     zf_pit_ms_init(PIT_TIM1, 10, RTK_pit_handler, NULL);             // RTK定时器中断初始化
+ 192              		.loc 1 113 5
+ 193 00b6 0023     		movs	r3, #0
+ 194 00b8 B14A     		ldr	r2, .L23+112
+ 195 00ba 0A21     		movs	r1, #10
+ 196 00bc 0020     		movs	r0, #0
+ 197 00be FFF7FEFF 		bl	zf_pit_ms_init
+ 114:src/main.c    ****     zf_pit_ms_init(PIT_TIM5, 100, encoder_pit_handler, encoder_data);
+ 198              		.loc 1 114 5
+ 199 00c2 03AB     		add	r3, sp, #12
+ 200 00c4 AF4A     		ldr	r2, .L23+116
+ 201 00c6 6421     		movs	r1, #100
+ 202 00c8 0320     		movs	r0, #3
+ 203 00ca FFF7FEFF 		bl	zf_pit_ms_init
+ 115:src/main.c    ****     zf_pit_set_interrupt_priority(PIT_TIM7, INTERRUPT_PRIORITY_LOW); // 中断优先级最低
+ 204              		.loc 1 115 5
+ 205 00ce 0F21     		movs	r1, #15
+ 206 00d0 0920     		movs	r0, #9
+ 207 00d2 FFF7FEFF 		bl	zf_pit_set_interrupt_priority
+ 116:src/main.c    ****     zf_pit_set_interrupt_priority(PIT_TIM6, INTERRUPT_PRIORITY_HIGH);// 中断优先级最高
+ 208              		.loc 1 116 5
+ 209 00d6 0021     		movs	r1, #0
+ 210 00d8 0820     		movs	r0, #8
+ 211 00da FFF7FEFF 		bl	zf_pit_set_interrupt_priority
+ 117:src/main.c    ****     zf_pit_set_interrupt_priority(PIT_TIM1, INTERRUPT_PRIORITY_1);   // 中断优先级中间
+ 212              		.loc 1 117 5
+ 213 00de 0121     		movs	r1, #1
+ 214 00e0 0020     		movs	r0, #0
+ 215 00e2 FFF7FEFF 		bl	zf_pit_set_interrupt_priority
+ 118:src/main.c    ****     zf_pit_set_interrupt_priority(PIT_TIM5, INTERRUPT_PRIORITY_2);   // 中断优先级中间
+ 216              		.loc 1 118 5
+ 217 00e6 0221     		movs	r1, #2
+ 218 00e8 0320     		movs	r0, #3
+ 219 00ea FFF7FEFF 		bl	zf_pit_set_interrupt_priority
+ 119:src/main.c    ****     zf_delay_ms(1000);
+ 220              		.loc 1 119 5
+ 221 00ee 4FF47A70 		mov	r0, #1000
+ 222 00f2 FFF7FEFF 		bl	zf_delay_ms
+ 223              	.L20:
+ 120:src/main.c    ****     for( ; ; )
+ 121:src/main.c    ****     {
+ 122:src/main.c    ****       	sudo = ((-encoder_data[0]/1024.0)*(27.0/44.0)*(12.0/30.0)*3.1415926*7.2*2);
+ 224              		.loc 1 122 30
+ 225 00f6 BDF90C30 		ldrsh	r3, [sp, #12]
+ 226              		.loc 1 122 17
+ 227 00fa 5B42     		rsbs	r3, r3, #0
+ 228              		.loc 1 122 33
+ 229 00fc 07EE903A 		vmov	s15, r3	@ int
+ 230 0100 B8EEE76B 		vcvt.f64.s32	d6, s15
+ 231 0104 9FED825B 		vldr.64	d5, .L23
+ 232 0108 86EE057B 		vdiv.f64	d7, d6, d5
+ 233              		.loc 1 122 41
+ 234 010c 9FED826B 		vldr.64	d6, .L23+8
+ 235 0110 27EE067B 		vmul.f64	d7, d7, d6
+ 236              		.loc 1 122 53
+ 237 0114 9FED826B 		vldr.64	d6, .L23+16
+ 238 0118 27EE067B 		vmul.f64	d7, d7, d6
+ 239              		.loc 1 122 65
+ 240 011c 9FED826B 		vldr.64	d6, .L23+24
+ 241 0120 27EE067B 		vmul.f64	d7, d7, d6
+ 242              		.loc 1 122 75
+ 243 0124 9FED826B 		vldr.64	d6, .L23+32
+ 244 0128 27EE067B 		vmul.f64	d7, d7, d6
+ 245              		.loc 1 122 79
+ 246 012c 37EE077B 		vadd.f64	d7, d7, d7
+ 247              		.loc 1 122 13
+ 248 0130 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 249 0134 CDED077A 		vstr.32	s15, [sp, #28]
+ 123:src/main.c    **** //      encoder_contorl_sudo(50,sudo);
+ 124:src/main.c    **** //      zf_delay_ms(50);
+ 125:src/main.c    ****         key = dlw_key_scan(0);
+ 250              		.loc 1 125 15
+ 251 0138 0020     		movs	r0, #0
+ 252 013a FFF7FEFF 		bl	dlw_key_scan
+ 253 013e 0346     		mov	r3, r0
+ 254 0140 1A46     		mov	r2, r3
+ 255              		.loc 1 125 13
+ 256 0142 914B     		ldr	r3, .L23+120
+ 257 0144 1A70     		strb	r2, [r3]
+ 126:src/main.c    ****         remote_ch4 = uart_receiver.channel[3];
+ 258              		.loc 1 126 20
+ 259 0146 814B     		ldr	r3, .L23+60
+ 260 0148 DB88     		ldrh	r3, [r3, #6]	@ movhi
+ 261 014a ADF82030 		strh	r3, [sp, #32]	@ movhi
+ 127:src/main.c    ****         if(GL_IMU_Flag == 1)
+ 262              		.loc 1 127 24
+ 263 014e 8F4B     		ldr	r3, .L23+124
+ 264 0150 1B68     		ldr	r3, [r3]
+ 265              		.loc 1 127 11
+ 266 0152 012B     		cmp	r3, #1
+ 267 0154 40F01282 		bne	.L2
+ 128:src/main.c    ****         {
+ 129:src/main.c    ****            zf_gpio_set_level(E2, GPIO_HIGH);       // DIR引脚高电平（正转）
+ 268              		.loc 1 129 12
+ 269 0158 0121     		movs	r1, #1
+ 270 015a 8220     		movs	r0, #130
+ 271 015c FFF7FEFF 		bl	zf_gpio_set_level
+ 130:src/main.c    ****            quaternion_get_euler(&current_angles);//计算欧拉角
+ 272              		.loc 1 130 12
+ 273 0160 8B48     		ldr	r0, .L23+128
+ 274 0162 FFF7FEFF 		bl	quaternion_get_euler
+ 131:src/main.c    **** 
+ 132:src/main.c    ****            ips200_show_string(0, 16*0, "car run:");
+ 275              		.loc 1 132 12
+ 276 0166 8B4B     		ldr	r3, .L23+132
+ 277 0168 0022     		movs	r2, #0
+ 278 016a 0021     		movs	r1, #0
+ 279 016c 8A48     		ldr	r0, .L23+136
+ 280 016e FFF7FEFF 		bl	display_interface_show_string
+ 133:src/main.c    ****            ips200_show_string(0, 16*1, "next lat/lot:");
+ 281              		.loc 1 133 12
+ 282 0172 8A4B     		ldr	r3, .L23+140
+ 283 0174 1022     		movs	r2, #16
+ 284 0176 0021     		movs	r1, #0
+ 285 0178 8748     		ldr	r0, .L23+136
+ 286 017a FFF7FEFF 		bl	display_interface_show_string
+ 134:src/main.c    ****            ips200_show_string(0, 16*3, "now lat/lot:");
+ 287              		.loc 1 134 12
+ 288 017e 884B     		ldr	r3, .L23+144
+ 289 0180 3022     		movs	r2, #48
+ 290 0182 0021     		movs	r1, #0
+ 291 0184 8448     		ldr	r0, .L23+136
+ 292 0186 FFF7FEFF 		bl	display_interface_show_string
+ 135:src/main.c    ****            ips200_show_string(0, 16*5, "go angle:");
+ 293              		.loc 1 135 12
+ 294 018a 864B     		ldr	r3, .L23+148
+ 295 018c 5022     		movs	r2, #80
+ 296 018e 0021     		movs	r1, #0
+ 297 0190 8148     		ldr	r0, .L23+136
+ 298 0192 FFF7FEFF 		bl	display_interface_show_string
+ 136:src/main.c    ****            ips200_show_string(0, 16*7, "virtual_north:");
+ 299              		.loc 1 136 12
+ 300 0196 844B     		ldr	r3, .L23+152
+ 301 0198 7022     		movs	r2, #112
+ 302 019a 0021     		movs	r1, #0
+ 303 019c 7E48     		ldr	r0, .L23+136
+ 304 019e FFF7FEFF 		bl	display_interface_show_string
+ 137:src/main.c    ****            ips200_show_string(0, 16*9, "current_yaw:");
+ 305              		.loc 1 137 12
+ 306 01a2 824B     		ldr	r3, .L23+156
+ 307 01a4 9022     		movs	r2, #144
+ 308 01a6 0021     		movs	r1, #0
+ 309 01a8 7B48     		ldr	r0, .L23+136
+ 310 01aa FFF7FEFF 		bl	display_interface_show_string
+ 138:src/main.c    ****            ips200_show_string(0, 16*11, "imu_yaw:");
+ 311              		.loc 1 138 12
+ 312 01ae 804B     		ldr	r3, .L23+160
+ 313 01b0 B022     		movs	r2, #176
+ 314 01b2 0021     		movs	r1, #0
+ 315 01b4 7848     		ldr	r0, .L23+136
+ 316 01b6 FFF7FEFF 		bl	display_interface_show_string
+ 139:src/main.c    **** 
+ 140:src/main.c    ****            ips200_show_float(50, 16*2, Target_point[0][gnns_sum], 3, 6);    //显示完整纬度坐
+ 317              		.loc 1 140 12
+ 318 01ba 7E4A     		ldr	r2, .L23+164
+ 319 01bc 0F9B     		ldr	r3, [sp, #60]
+ 320 01be DB00     		lsls	r3, r3, #3
+ 321 01c0 1344     		add	r3, r3, r2
+ 322 01c2 93ED007B 		vldr.64	d7, [r3]
+ 323 01c6 0623     		movs	r3, #6
+ 324 01c8 0093     		str	r3, [sp]
+ 325 01ca 0323     		movs	r3, #3
+ 326 01cc B0EE470B 		vmov.f64	d0, d7
+ 327 01d0 2022     		movs	r2, #32
+ 328 01d2 3221     		movs	r1, #50
+ 329 01d4 7048     		ldr	r0, .L23+136
+ 330 01d6 FFF7FEFF 		bl	display_interface_show_float
+ 141:src/main.c    ****            ips200_show_float(150, 16*2, Target_point[1][gnns_sum], 3, 6);   //显示完整经度坐
+ 331              		.loc 1 141 12
+ 332 01da 764A     		ldr	r2, .L23+164
+ 333 01dc 0F9B     		ldr	r3, [sp, #60]
+ 334 01de 9633     		adds	r3, r3, #150
+ 335 01e0 DB00     		lsls	r3, r3, #3
+ 336 01e2 1344     		add	r3, r3, r2
+ 337 01e4 93ED007B 		vldr.64	d7, [r3]
+ 338 01e8 0623     		movs	r3, #6
+ 339 01ea 0093     		str	r3, [sp]
+ 340 01ec 0323     		movs	r3, #3
+ 341 01ee B0EE470B 		vmov.f64	d0, d7
+ 342 01f2 2022     		movs	r2, #32
+ 343 01f4 9621     		movs	r1, #150
+ 344 01f6 6848     		ldr	r0, .L23+136
+ 345 01f8 FFF7FEFF 		bl	display_interface_show_float
+ 142:src/main.c    ****            ips200_show_float(50, 16*4, gnss_info.latitude, 3, 6);           //显示当前纬度坐
+ 346              		.loc 1 142 12
+ 347 01fc 6E4B     		ldr	r3, .L23+168
+ 348 01fe 93ED067B 		vldr.64	d7, [r3, #24]
+ 349 0202 0623     		movs	r3, #6
+ 350 0204 0093     		str	r3, [sp]
+ 351 0206 0323     		movs	r3, #3
+ 352 0208 B0EE470B 		vmov.f64	d0, d7
+ 353 020c 4022     		movs	r2, #64
+ 354 020e 3221     		movs	r1, #50
+ 355 0210 6148     		ldr	r0, .L23+136
+ 356 0212 FFF7FEFF 		bl	display_interface_show_float
+ 143:src/main.c    ****            ips200_show_float(150, 16*4, gnss_info.longitude, 3, 6);         //显示当前经度坐
+ 357              		.loc 1 143 12
+ 358 0216 684B     		ldr	r3, .L23+168
+ 359 0218 93ED087B 		vldr.64	d7, [r3, #32]
+ 360 021c 0623     		movs	r3, #6
+ 361 021e 0093     		str	r3, [sp]
+ 362 0220 0323     		movs	r3, #3
+ 363 0222 B0EE470B 		vmov.f64	d0, d7
+ 364 0226 4022     		movs	r2, #64
+ 365 0228 9621     		movs	r1, #150
+ 366 022a 5B48     		ldr	r0, .L23+136
+ 367 022c FFF7FEFF 		bl	display_interface_show_float
+ 144:src/main.c    ****            ips200_show_float(50, 16*6, (current_yaw_180), 3, 6);            //显示航向角
+ 368              		.loc 1 144 12
+ 369 0230 0623     		movs	r3, #6
+ 370 0232 0093     		str	r3, [sp]
+ 371 0234 0323     		movs	r3, #3
+ 372 0236 9DED0A0B 		vldr.64	d0, [sp, #40]
+ 373 023a 6022     		movs	r2, #96
+ 374 023c 3221     		movs	r1, #50
+ 375 023e 5648     		ldr	r0, .L23+136
+ 376 0240 FFF7FEFF 		bl	display_interface_show_float
+ 145:src/main.c    ****            ips200_show_float(50, 16*8, (virtual_north), 3, 6);              //显示修正角
+ 377              		.loc 1 145 12
+ 378 0244 5D4B     		ldr	r3, .L23+172
+ 379 0246 D3ED007A 		vldr.32	s15, [r3]
+ 380 024a B7EEE77A 		vcvt.f64.f32	d7, s15
+ 381 024e 0623     		movs	r3, #6
+ 382 0250 0093     		str	r3, [sp]
+ 383 0252 0323     		movs	r3, #3
+ 384 0254 B0EE470B 		vmov.f64	d0, d7
+ 385 0258 8022     		movs	r2, #128
+ 386 025a 3221     		movs	r1, #50
+ 387 025c 4E48     		ldr	r0, .L23+136
+ 388 025e FFF7FEFF 		bl	display_interface_show_float
+ 146:src/main.c    ****            ips200_show_float(50, 16*10, (current_yaw), 3, 6);               //显示当前方向角
+ 389              		.loc 1 146 12
+ 390 0262 0623     		movs	r3, #6
+ 391 0264 0093     		str	r3, [sp]
+ 392 0266 0323     		movs	r3, #3
+ 393 0268 9DED0C0B 		vldr.64	d0, [sp, #48]
+ 394 026c A022     		movs	r2, #160
+ 395 026e 3221     		movs	r1, #50
+ 396 0270 4948     		ldr	r0, .L23+136
+ 397 0272 FFF7FEFF 		bl	display_interface_show_float
+ 147:src/main.c    ****            ips200_show_float(50, 16*12, (gnns_sum), 3, 6);        //显示当前IMU测量角度（�
+ 398              		.loc 1 147 12
+ 399 0276 0F9B     		ldr	r3, [sp, #60]
+ 400 0278 07EE903A 		vmov	s15, r3	@ int
+ 401 027c B8EEE77B 		vcvt.f64.s32	d7, s15
+ 402 0280 0623     		movs	r3, #6
+ 403 0282 0093     		str	r3, [sp]
+ 404 0284 0323     		movs	r3, #3
+ 405 0286 B0EE470B 		vmov.f64	d0, d7
+ 406 028a C022     		movs	r2, #192
+ 407 028c 3221     		movs	r1, #50
+ 408 028e 4248     		ldr	r0, .L23+136
+ 409 0290 FFF7FEFF 		bl	display_interface_show_float
+ 148:src/main.c    ****            //角度变换
+ 149:src/main.c    ****            current_yaw=gnss_get_two_points_azimuth(gnss_info.latitude,gnss_info.longitude,Target_po
+ 410              		.loc 1 149 24
+ 411 0294 484B     		ldr	r3, .L23+168
+ 412 0296 93ED067B 		vldr.64	d7, [r3, #24]
+ 413 029a 474B     		ldr	r3, .L23+168
+ 414 029c 93ED086B 		vldr.64	d6, [r3, #32]
+ 415 02a0 444A     		ldr	r2, .L23+164
+ 416 02a2 0F9B     		ldr	r3, [sp, #60]
+ 417 02a4 DB00     		lsls	r3, r3, #3
+ 418 02a6 1344     		add	r3, r3, r2
+ 419 02a8 93ED005B 		vldr.64	d5, [r3]
+ 420 02ac 414A     		ldr	r2, .L23+164
+ 421 02ae 0F9B     		ldr	r3, [sp, #60]
+ 422 02b0 9633     		adds	r3, r3, #150
+ 423 02b2 DB00     		lsls	r3, r3, #3
+ 424 02b4 1344     		add	r3, r3, r2
+ 425 02b6 93ED004B 		vldr.64	d4, [r3]
+ 426 02ba B0EE443B 		vmov.f64	d3, d4
+ 427 02be B0EE452B 		vmov.f64	d2, d5
+ 428 02c2 B0EE461B 		vmov.f64	d1, d6
+ 429 02c6 B0EE470B 		vmov.f64	d0, d7
+ 430 02ca FFF7FEFF 		bl	gnss_get_two_points_azimuth
+ 431 02ce 8DED0C0B 		vstr.64	d0, [sp, #48]
+ 150:src/main.c    ****            current_yaw_180=current_yaw-virtual_north;
+ 432              		.loc 1 150 39
+ 433 02d2 3A4B     		ldr	r3, .L23+172
+ 434 02d4 D3ED007A 		vldr.32	s15, [r3]
+ 435 02d8 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 436              		.loc 1 150 27
+ 437 02dc 9DED0C6B 		vldr.64	d6, [sp, #48]
+ 438 02e0 36EE477B 		vsub.f64	d7, d6, d7
+ 439 02e4 8DED0A7B 		vstr.64	d7, [sp, #40]
+ 151:src/main.c    ****            while (current_yaw_180 >= 180.0) current_yaw_180 -= 360.0;
+ 440              		.loc 1 151 18
+ 441 02e8 07E0     		b	.L3
+ 442              	.L4:
+ 443              		.loc 1 151 61 discriminator 2
+ 444 02ea 9DED0A7B 		vldr.64	d7, [sp, #40]
+ 445 02ee 9FED126B 		vldr.64	d6, .L23+40
+ 446 02f2 37EE467B 		vsub.f64	d7, d7, d6
+ 447 02f6 8DED0A7B 		vstr.64	d7, [sp, #40]
+ 448              	.L3:
+ 449              		.loc 1 151 18 discriminator 1
+ 450 02fa 9DED0A7B 		vldr.64	d7, [sp, #40]
+ 451 02fe 9FED106B 		vldr.64	d6, .L23+48
+ 452 0302 B4EEC67B 		vcmpe.f64	d7, d6
+ 453 0306 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 454 030a EEDA     		bge	.L4
+ 152:src/main.c    ****            while (current_yaw_180 <-180.0) current_yaw_180 += 360.0;
+ 455              		.loc 1 152 18
+ 456 030c 60E0     		b	.L5
+ 457              	.L24:
+ 458 030e 00BF     		.align	3
+ 459              	.L23:
+ 460 0310 00000000 		.word	0
+ 461 0314 00009040 		.word	1083179008
+ 462 0318 A38B2EBA 		.word	-1171354717
+ 463 031c E8A2E33F 		.word	1071882984
+ 464 0320 9A999999 		.word	-1717986918
+ 465 0324 9999D93F 		.word	1071225241
+ 466 0328 4AD8124D 		.word	1293080650
+ 467 032c FB210940 		.word	1074340347
+ 468 0330 CDCCCCCC 		.word	-858993459
+ 469 0334 CCCC1C40 		.word	1075629260
+ 470 0338 00000000 		.word	0
+ 471 033c 00807640 		.word	1081507840
+ 472 0340 00000000 		.word	0
+ 473 0344 00806640 		.word	1080459264
+ 474 0348 00A3E111 		.word	300000000
+ 475 034c 00000000 		.word	uart_receiver
+ 476 0350 00410100 		.word	82176
+ 477 0354 00000000 		.word	imu_pid
+ 478 0358 0000C842 		.word	1120403456
+ 479 035c 0000C8C2 		.word	-1027080192
+ 480 0360 00000000 		.word	0
+ 481 0364 CDCCCC3D 		.word	1036831949
+ 482 0368 00003442 		.word	1110704128
+ 483 036c 6F101200 		.word	1183855
+ 484 0370 6E100200 		.word	135278
+ 485 0374 00000000 		.word	rgb_flicker_handler
+ 486 0378 00000000 		.word	imu_data
+ 487 037c 00000000 		.word	imu_pit_handler
+ 488 0380 00000000 		.word	RTK_pit_handler
+ 489 0384 00000000 		.word	encoder_pit_handler
+ 490 0388 00000000 		.word	key
+ 491 038c 00000000 		.word	GL_IMU_Flag
+ 492 0390 00000000 		.word	current_angles
+ 493 0394 00000000 		.word	.LC0
+ 494 0398 00000000 		.word	display_interface_default_obj
+ 495 039c 0C000000 		.word	.LC1
+ 496 03a0 1C000000 		.word	.LC2
+ 497 03a4 2C000000 		.word	.LC3
+ 498 03a8 38000000 		.word	.LC4
+ 499 03ac 48000000 		.word	.LC5
+ 500 03b0 58000000 		.word	.LC6
+ 501 03b4 00000000 		.word	Target_point
+ 502 03b8 00000000 		.word	gnss_info
+ 503 03bc 00000000 		.word	virtual_north
+ 504              	.L6:
+ 505              		.loc 1 152 60 discriminator 2
+ 506 03c0 9DED0A7B 		vldr.64	d7, [sp, #40]
+ 507 03c4 9FED7E6B 		vldr.64	d6, .L25
+ 508 03c8 37EE067B 		vadd.f64	d7, d7, d6
+ 509 03cc 8DED0A7B 		vstr.64	d7, [sp, #40]
+ 510              	.L5:
+ 511              		.loc 1 152 18 discriminator 1
+ 512 03d0 9DED0A7B 		vldr.64	d7, [sp, #40]
+ 513 03d4 9FED7C6B 		vldr.64	d6, .L25+8
+ 514 03d8 B4EEC67B 		vcmpe.f64	d7, d6
+ 515 03dc F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 516 03e0 EED4     		bmi	.L6
+ 153:src/main.c    ****            imu_pid.setpoint=-(current_yaw_180);
+ 517              		.loc 1 153 28
+ 518 03e2 9DED0A7B 		vldr.64	d7, [sp, #40]
+ 519 03e6 F7EEC77B 		vcvt.f32.f64	s15, d7
+ 520 03ea F1EE677A 		vneg.f32	s15, s15
+ 521 03ee 784B     		ldr	r3, .L25+16
+ 522 03f0 C3ED037A 		vstr.32	s15, [r3, #12]
+ 154:src/main.c    ****            //距离检测
+ 155:src/main.c    ****            current_distance=gnss_get_two_points_distance(gnss_info.latitude,gnss_info.longitude,Tar
+ 523              		.loc 1 155 29
+ 524 03f4 774B     		ldr	r3, .L25+20
+ 525 03f6 93ED067B 		vldr.64	d7, [r3, #24]
+ 526 03fa 764B     		ldr	r3, .L25+20
+ 527 03fc 93ED086B 		vldr.64	d6, [r3, #32]
+ 528 0400 754A     		ldr	r2, .L25+24
+ 529 0402 0F9B     		ldr	r3, [sp, #60]
+ 530 0404 DB00     		lsls	r3, r3, #3
+ 531 0406 1344     		add	r3, r3, r2
+ 532 0408 93ED005B 		vldr.64	d5, [r3]
+ 533 040c 724A     		ldr	r2, .L25+24
+ 534 040e 0F9B     		ldr	r3, [sp, #60]
+ 535 0410 9633     		adds	r3, r3, #150
+ 536 0412 DB00     		lsls	r3, r3, #3
+ 537 0414 1344     		add	r3, r3, r2
+ 538 0416 93ED004B 		vldr.64	d4, [r3]
+ 539 041a B0EE443B 		vmov.f64	d3, d4
+ 540 041e B0EE452B 		vmov.f64	d2, d5
+ 541 0422 B0EE461B 		vmov.f64	d1, d6
+ 542 0426 B0EE470B 		vmov.f64	d0, d7
+ 543 042a FFF7FEFF 		bl	gnss_get_two_points_distance
+ 544 042e 8DED040B 		vstr.64	d0, [sp, #16]
+ 156:src/main.c    ****            pid_output = pid_compute(&imu_pid, current_angles.yaw);
+ 545              		.loc 1 156 25
+ 546 0432 6A4B     		ldr	r3, .L25+28
+ 547 0434 D3ED027A 		vldr.32	s15, [r3, #8]
+ 548 0438 B0EE670A 		vmov.f32	s0, s15
+ 549 043c 6448     		ldr	r0, .L25+16
+ 550 043e FFF7FEFF 		bl	pid_compute
+ 551 0442 8DED090A 		vstr.32	s0, [sp, #36]
+ 157:src/main.c    ****            dlw_servo_stabilize(pid_output);
+ 552              		.loc 1 157 12
+ 553 0446 9DED090A 		vldr.32	s0, [sp, #36]
+ 554 044a FFF7FEFF 		bl	dlw_servo_stabilize
+ 158:src/main.c    ****            if (left)
+ 555              		.loc 1 158 16
+ 556 044e 644B     		ldr	r3, .L25+32
+ 557 0450 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 558              		.loc 1 158 15
+ 559 0452 002B     		cmp	r3, #0
+ 560 0454 4DD0     		beq	.L7
+ 159:src/main.c    ****            {
+ 160:src/main.c    ****         	   	   zf_gpio_set_level(G14,GPIO_LOW);
+ 561              		.loc 1 160 17
+ 562 0456 0021     		movs	r1, #0
+ 563 0458 CE20     		movs	r0, #206
+ 564 045a FFF7FEFF 		bl	zf_gpio_set_level
+ 161:src/main.c    **** 				   while(Target_point[0][i] != 0 && gnns_sum_flag == 1)
+ 565              		.loc 1 161 13
+ 566 045e 07E0     		b	.L8
+ 567              	.L10:
+ 162:src/main.c    **** 				   {
+ 163:src/main.c    **** 					   gnns_sum = i;
+ 568              		.loc 1 163 18
+ 569 0460 9DF83A30 		ldrb	r3, [sp, #58]	@ zero_extendqisi2
+ 570 0464 0F93     		str	r3, [sp, #60]
+ 164:src/main.c    **** 					   i++;
+ 571              		.loc 1 164 10
+ 572 0466 9DF83A30 		ldrb	r3, [sp, #58]	@ zero_extendqisi2
+ 573 046a 0133     		adds	r3, r3, #1
+ 574 046c 8DF83A30 		strb	r3, [sp, #58]
+ 575              	.L8:
+ 161:src/main.c    **** 				   while(Target_point[0][i] != 0 && gnns_sum_flag == 1)
+ 576              		.loc 1 161 29
+ 577 0470 9DF83A30 		ldrb	r3, [sp, #58]	@ zero_extendqisi2
+ 578 0474 584A     		ldr	r2, .L25+24
+ 579 0476 DB00     		lsls	r3, r3, #3
+ 580 0478 1344     		add	r3, r3, r2
+ 581 047a 93ED007B 		vldr.64	d7, [r3]
+ 161:src/main.c    **** 				   while(Target_point[0][i] != 0 && gnns_sum_flag == 1)
+ 582              		.loc 1 161 13
+ 583 047e B5EE407B 		vcmp.f64	d7, #0
+ 584 0482 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 585 0486 03D0     		beq	.L9
+ 161:src/main.c    **** 				   while(Target_point[0][i] != 0 && gnns_sum_flag == 1)
+ 586              		.loc 1 161 38 discriminator 1
+ 587 0488 9DF83B30 		ldrb	r3, [sp, #59]	@ zero_extendqisi2
+ 588 048c 012B     		cmp	r3, #1
+ 589 048e E7D0     		beq	.L10
+ 590              	.L9:
+ 165:src/main.c    **** 				   }
+ 166:src/main.c    **** 				   if(remote_ch4 != 1792 )
+ 591              		.loc 1 166 10
+ 592 0490 BDF82030 		ldrh	r3, [sp, #32]
+ 593 0494 B3F5E06F 		cmp	r3, #1792
+ 594 0498 05D0     		beq	.L11
+ 167:src/main.c    **** 				   {
+ 168:src/main.c    **** 					  encoder_contorl_sudo(100,sudo);
+ 595              		.loc 1 168 8
+ 596 049a DDED070A 		vldr.32	s1, [sp, #28]
+ 597 049e 9FED510A 		vldr.32	s0, .L25+36
+ 598 04a2 FFF7FEFF 		bl	encoder_contorl_sudo
+ 599              	.L11:
+ 169:src/main.c    **** 				   }
+ 170:src/main.c    **** 				   if(remote_ch4 == 1792 )
+ 600              		.loc 1 170 10
+ 601 04a6 BDF82030 		ldrh	r3, [sp, #32]
+ 602 04aa B3F5E06F 		cmp	r3, #1792
+ 603 04ae 05D1     		bne	.L12
+ 171:src/main.c    **** 				   {
+ 172:src/main.c    **** 					  encoder_contorl_sudo(0,sudo);
+ 604              		.loc 1 172 8
+ 605 04b0 DDED070A 		vldr.32	s1, [sp, #28]
+ 606 04b4 9FED4C0A 		vldr.32	s0, .L25+40
+ 607 04b8 FFF7FEFF 		bl	encoder_contorl_sudo
+ 608              	.L12:
+ 173:src/main.c    **** 				   }
+ 174:src/main.c    **** 					 gnns_sum_flag = 0;
+ 609              		.loc 1 174 21
+ 610 04bc 0023     		movs	r3, #0
+ 611 04be 8DF83B30 		strb	r3, [sp, #59]
+ 175:src/main.c    **** 				   if(current_distance < 1)
+ 612              		.loc 1 175 10
+ 613 04c2 9DED047B 		vldr.64	d7, [sp, #16]
+ 614 04c6 B7EE006B 		vmov.f64	d6, #1.0e+0
+ 615 04ca B4EEC67B 		vcmpe.f64	d7, d6
+ 616 04ce F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 617 04d2 0ED5     		bpl	.L7
+ 176:src/main.c    **** 					{
+ 177:src/main.c    **** 					   if(gnns_sum == 0)
+ 618              		.loc 1 177 11
+ 619 04d4 0F9B     		ldr	r3, [sp, #60]
+ 620 04d6 002B     		cmp	r3, #0
+ 621 04d8 08D1     		bne	.L14
+ 178:src/main.c    **** 					   {
+ 179:src/main.c    **** 						   encoder_contorl_sudo(0,sudo);
+ 622              		.loc 1 179 10
+ 623 04da DDED070A 		vldr.32	s1, [sp, #28]
+ 624 04de 9FED420A 		vldr.32	s0, .L25+40
+ 625 04e2 FFF7FEFF 		bl	encoder_contorl_sudo
+ 180:src/main.c    **** 						   GL_IMU_Flag = 0;
+ 626              		.loc 1 180 22
+ 627 04e6 414B     		ldr	r3, .L25+44
+ 628 04e8 0022     		movs	r2, #0
+ 629 04ea 1A60     		str	r2, [r3]
+ 630              	.L14:
+ 181:src/main.c    **** 					   }
+ 182:src/main.c    **** 						 gnns_sum--;
+ 631              		.loc 1 182 16
+ 632 04ec 0F9B     		ldr	r3, [sp, #60]
+ 633 04ee 013B     		subs	r3, r3, #1
+ 634 04f0 0F93     		str	r3, [sp, #60]
+ 635              	.L7:
+ 183:src/main.c    **** 					}
+ 184:src/main.c    **** 
+ 185:src/main.c    ****            }
+ 186:src/main.c    ****            if(right)
+ 636              		.loc 1 186 15
+ 637 04f2 3F4B     		ldr	r3, .L25+48
+ 638 04f4 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 639              		.loc 1 186 14
+ 640 04f6 002B     		cmp	r3, #0
+ 641 04f8 3FF4FDAD 		beq	.L20
+ 187:src/main.c    ****            {
+ 188:src/main.c    **** 			   if(remote_ch4 != 1792 )
+ 642              		.loc 1 188 9
+ 643 04fc BDF82030 		ldrh	r3, [sp, #32]
+ 644 0500 B3F5E06F 		cmp	r3, #1792
+ 645 0504 05D0     		beq	.L16
+ 189:src/main.c    **** 			   {
+ 190:src/main.c    **** 				  encoder_contorl_sudo(100,sudo);
+ 646              		.loc 1 190 7
+ 647 0506 DDED070A 		vldr.32	s1, [sp, #28]
+ 648 050a 9FED360A 		vldr.32	s0, .L25+36
+ 649 050e FFF7FEFF 		bl	encoder_contorl_sudo
+ 650              	.L16:
+ 191:src/main.c    **** 			   }
+ 192:src/main.c    **** 			   if(remote_ch4 == 1792 )
+ 651              		.loc 1 192 9
+ 652 0512 BDF82030 		ldrh	r3, [sp, #32]
+ 653 0516 B3F5E06F 		cmp	r3, #1792
+ 654 051a 05D1     		bne	.L17
+ 193:src/main.c    **** 			   {
+ 194:src/main.c    **** 				  encoder_contorl_sudo(0,sudo);
+ 655              		.loc 1 194 7
+ 656 051c DDED070A 		vldr.32	s1, [sp, #28]
+ 657 0520 9FED310A 		vldr.32	s0, .L25+40
+ 658 0524 FFF7FEFF 		bl	encoder_contorl_sudo
+ 659              	.L17:
+ 195:src/main.c    **** 			   }
+ 196:src/main.c    **** 				 if(current_distance < 1)
+ 660              		.loc 1 196 8
+ 661 0528 9DED047B 		vldr.64	d7, [sp, #16]
+ 662 052c B7EE006B 		vmov.f64	d6, #1.0e+0
+ 663 0530 B4EEC67B 		vcmpe.f64	d7, d6
+ 664 0534 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 665 0538 41D5     		bpl	.L15
+ 197:src/main.c    **** 				 {
+ 198:src/main.c    **** 					 if(gnns_sum==0)
+ 666              		.loc 1 198 9
+ 667 053a 0F9B     		ldr	r3, [sp, #60]
+ 668 053c 002B     		cmp	r3, #0
+ 669 053e 0BD1     		bne	.L19
+ 199:src/main.c    **** 					 {
+ 200:src/main.c    **** 						 GL_IMU_Flag=0;//stop
+ 670              		.loc 1 200 19
+ 671 0540 2A4B     		ldr	r3, .L25+44
+ 672 0542 0022     		movs	r2, #0
+ 673 0544 1A60     		str	r2, [r3]
+ 201:src/main.c    **** 						 encoder_contorl_sudo(0,sudo);
+ 674              		.loc 1 201 8
+ 675 0546 DDED070A 		vldr.32	s1, [sp, #28]
+ 676 054a 9FED270A 		vldr.32	s0, .L25+40
+ 677 054e FFF7FEFF 		bl	encoder_contorl_sudo
+ 202:src/main.c    **** 						 GL_IMU_Flag = 0;
+ 678              		.loc 1 202 20
+ 679 0552 264B     		ldr	r3, .L25+44
+ 680 0554 0022     		movs	r2, #0
+ 681 0556 1A60     		str	r2, [r3]
+ 682              	.L19:
+ 203:src/main.c    **** 	   //                  dlw_set_motor_duty(0);
+ 204:src/main.c    **** 					 }
+ 205:src/main.c    **** 					 gnns_sum++;
+ 683              		.loc 1 205 15
+ 684 0558 0F9B     		ldr	r3, [sp, #60]
+ 685 055a 0133     		adds	r3, r3, #1
+ 686 055c 0F93     		str	r3, [sp, #60]
+ 206:src/main.c    **** 					 if(Target_point[0][gnns_sum] == 0)
+ 687              		.loc 1 206 25
+ 688 055e 1E4A     		ldr	r2, .L25+24
+ 689 0560 0F9B     		ldr	r3, [sp, #60]
+ 690 0562 DB00     		lsls	r3, r3, #3
+ 691 0564 1344     		add	r3, r3, r2
+ 692 0566 93ED007B 		vldr.64	d7, [r3]
+ 693              		.loc 1 206 9
+ 694 056a B5EE407B 		vcmp.f64	d7, #0
+ 695 056e F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 696 0572 7FF4C0AD 		bne	.L20
+ 207:src/main.c    **** 					 {
+ 208:src/main.c    **** 						 gnns_sum=0;
+ 697              		.loc 1 208 16
+ 698 0576 0023     		movs	r3, #0
+ 699 0578 0F93     		str	r3, [sp, #60]
+ 700 057a BCE5     		b	.L20
+ 701              	.L2:
+ 209:src/main.c    **** 					 }
+ 210:src/main.c    **** 				 }
+ 211:src/main.c    ****            }
+ 212:src/main.c    **** 
+ 213:src/main.c    ****         }
+ 214:src/main.c    ****         else if(GL_IMU_Flag == 0)
+ 702              		.loc 1 214 29
+ 703 057c 1B4B     		ldr	r3, .L25+44
+ 704 057e 1B68     		ldr	r3, [r3]
+ 705              		.loc 1 214 16
+ 706 0580 002B     		cmp	r3, #0
+ 707 0582 7FF4B8AD 		bne	.L20
+ 215:src/main.c    ****         {
+ 216:src/main.c    ****               dlw_remote_control_get_data();
+ 708              		.loc 1 216 15
+ 709 0586 FFF7FEFF 		bl	dlw_remote_control_get_data
+ 217:src/main.c    ****               dlw_servo_control(channel_ptr[0]);                     // 调用修改后的舵机控
+ 710              		.loc 1 217 15
+ 711 058a 1A4B     		ldr	r3, .L25+52
+ 712 058c 1B68     		ldr	r3, [r3]
+ 713 058e 1B88     		ldrh	r3, [r3]
+ 714 0590 1846     		mov	r0, r3
+ 715 0592 FFF7FEFF 		bl	dlw_servo_control
+ 218:src/main.c    ****               dlw_moto_control(channel_ptr[1]);
+ 716              		.loc 1 218 43
+ 717 0596 174B     		ldr	r3, .L25+52
+ 718 0598 1B68     		ldr	r3, [r3]
+ 719 059a 0233     		adds	r3, r3, #2
+ 720              		.loc 1 218 15
+ 721 059c 1B88     		ldrh	r3, [r3]
+ 722 059e 1846     		mov	r0, r3
+ 723 05a0 FFF7FEFF 		bl	dlw_moto_control
+ 219:src/main.c    ****               ips200_show_string(70, 0, "remote control");
+ 724              		.loc 1 219 15
+ 725 05a4 144B     		ldr	r3, .L25+56
+ 726 05a6 0022     		movs	r2, #0
+ 727 05a8 4621     		movs	r1, #70
+ 728 05aa 1448     		ldr	r0, .L25+60
+ 729 05ac FFF7FEFF 		bl	display_interface_show_string
+ 220:src/main.c    ****               GL_CRC_state = GL_CRC();
+ 730              		.loc 1 220 30
+ 731 05b0 FFF7FEFF 		bl	GL_CRC
+ 732 05b4 0346     		mov	r3, r0
+ 733 05b6 8DF82330 		strb	r3, [sp, #35]
+ 221:src/main.c    ****               dlw_nfc_usartdata_process();
+ 734              		.loc 1 221 15
+ 735 05ba FFF7FEFF 		bl	dlw_nfc_usartdata_process
+ 736              	.L15:
+ 122:src/main.c    **** //      encoder_contorl_sudo(50,sudo);
+ 737              		.loc 1 122 13 discriminator 1
+ 738 05be 9AE5     		b	.L20
+ 739              	.L26:
+ 740              		.align	3
+ 741              	.L25:
+ 742 05c0 00000000 		.word	0
+ 743 05c4 00807640 		.word	1081507840
+ 744 05c8 00000000 		.word	0
+ 745 05cc 008066C0 		.word	-1067024384
+ 746 05d0 00000000 		.word	imu_pid
+ 747 05d4 00000000 		.word	gnss_info
+ 748 05d8 00000000 		.word	Target_point
+ 749 05dc 00000000 		.word	current_angles
+ 750 05e0 00000000 		.word	left
+ 751 05e4 0000C842 		.word	1120403456
+ 752 05e8 00000000 		.word	0
+ 753 05ec 00000000 		.word	GL_IMU_Flag
+ 754 05f0 00000000 		.word	right
+ 755 05f4 00000000 		.word	channel_ptr
+ 756 05f8 64000000 		.word	.LC7
+ 757 05fc 00000000 		.word	display_interface_default_obj
+ 758              		.cfi_endproc
+ 759              	.LFE482:
+ 761              		.section	.text.imu_pit_handler,"ax",%progbits
+ 762              		.align	1
+ 763              		.p2align 4,,15
+ 764              		.global	imu_pit_handler
+ 765              		.syntax unified
+ 766              		.thumb
+ 767              		.thumb_func
+ 769              	imu_pit_handler:
+ 770              	.LFB483:
+ 222:src/main.c    ****         }
+ 223:src/main.c    ****     }
+ 224:src/main.c    **** }
+ 225:src/main.c    **** 
+ 226:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 227:src/main.c    **** // 函数简介     imu周期中断触发函数
+ 228:src/main.c    **** // 参数说明     event           事件
+ 229:src/main.c    **** // 参数说明     *ptr            用户传参句柄
+ 230:src/main.c    **** // 返回参数     void            无返回值
+ 231:src/main.c    **** // 使用示例
+ 232:src/main.c    **** // 备注信息
+ 233:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 234:src/main.c    **** void imu_pit_handler (uint32 event, void *ptr)
+ 235:src/main.c    **** {
+ 771              		.loc 1 235 1
+ 772              		.cfi_startproc
+ 773              		@ args = 0, pretend = 0, frame = 40
+ 774              		@ frame_needed = 0, uses_anonymous_args = 0
+ 775 0000 00B5     		push	{lr}
+ 776              		.cfi_def_cfa_offset 4
+ 777              		.cfi_offset 14, -4
+ 778 0002 8BB0     		sub	sp, sp, #44
+ 779              		.cfi_def_cfa_offset 48
+ 780 0004 0190     		str	r0, [sp, #4]
+ 781 0006 0091     		str	r1, [sp]
+ 236:src/main.c    ****     (void)event;
+ 237:src/main.c    ****     imu660rb_measurement_data_struct *data_buffer       = (imu660rb_measurement_data_struct *)ptr;
+ 782              		.loc 1 237 39
+ 783 0008 009B     		ldr	r3, [sp]
+ 784 000a 0993     		str	r3, [sp, #36]
+ 238:src/main.c    **** //    imu660rb_physical_data_struct *physical_data_buffer = (imu660rb_physical_data_struct *)imu_ph
+ 239:src/main.c    ****     imu660rb_get_acc (data_buffer + 0);
+ 785              		.loc 1 239 5
+ 786 000c 0998     		ldr	r0, [sp, #36]
+ 787 000e FFF7FEFF 		bl	imu660rb_get_acc
+ 240:src/main.c    ****     imu660rb_get_gyro(data_buffer + 1);
+ 788              		.loc 1 240 5
+ 789 0012 099B     		ldr	r3, [sp, #36]
+ 790 0014 0633     		adds	r3, r3, #6
+ 791 0016 1846     		mov	r0, r3
+ 792 0018 FFF7FEFF 		bl	imu660rb_get_gyro
+ 241:src/main.c    **** 
+ 242:src/main.c    ****     if(calibration_done)
+ 793              		.loc 1 242 8
+ 794 001c 4F4B     		ldr	r3, .L29
+ 795 001e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 796              		.loc 1 242 7
+ 797 0020 002B     		cmp	r3, #0
+ 798 0022 2CD0     		beq	.L28
+ 243:src/main.c    ****     {
+ 244:src/main.c    ****         data_buffer[1].x -= gyro_bias_x;
+ 799              		.loc 1 244 26
+ 800 0024 099B     		ldr	r3, [sp, #36]
+ 801 0026 0633     		adds	r3, r3, #6
+ 802 0028 B3F90030 		ldrsh	r3, [r3]
+ 803 002c 9AB2     		uxth	r2, r3
+ 804 002e 4C4B     		ldr	r3, .L29+4
+ 805 0030 B3F90030 		ldrsh	r3, [r3]
+ 806 0034 9BB2     		uxth	r3, r3
+ 807 0036 D31A     		subs	r3, r2, r3
+ 808 0038 9AB2     		uxth	r2, r3
+ 809 003a 099B     		ldr	r3, [sp, #36]
+ 810 003c 0633     		adds	r3, r3, #6
+ 811 003e 12B2     		sxth	r2, r2
+ 812 0040 1A80     		strh	r2, [r3]	@ movhi
+ 245:src/main.c    ****         data_buffer[1].y -= gyro_bias_y;
+ 813              		.loc 1 245 26
+ 814 0042 099B     		ldr	r3, [sp, #36]
+ 815 0044 0633     		adds	r3, r3, #6
+ 816 0046 B3F90230 		ldrsh	r3, [r3, #2]
+ 817 004a 9AB2     		uxth	r2, r3
+ 818 004c 454B     		ldr	r3, .L29+8
+ 819 004e B3F90030 		ldrsh	r3, [r3]
+ 820 0052 9BB2     		uxth	r3, r3
+ 821 0054 D31A     		subs	r3, r2, r3
+ 822 0056 9AB2     		uxth	r2, r3
+ 823 0058 099B     		ldr	r3, [sp, #36]
+ 824 005a 0633     		adds	r3, r3, #6
+ 825 005c 12B2     		sxth	r2, r2
+ 826 005e 5A80     		strh	r2, [r3, #2]	@ movhi
+ 246:src/main.c    ****         data_buffer[1].z -= gyro_bias_z;
+ 827              		.loc 1 246 26
+ 828 0060 099B     		ldr	r3, [sp, #36]
+ 829 0062 0633     		adds	r3, r3, #6
+ 830 0064 B3F90430 		ldrsh	r3, [r3, #4]
+ 831 0068 9AB2     		uxth	r2, r3
+ 832 006a 3F4B     		ldr	r3, .L29+12
+ 833 006c B3F90030 		ldrsh	r3, [r3]
+ 834 0070 9BB2     		uxth	r3, r3
+ 835 0072 D31A     		subs	r3, r2, r3
+ 836 0074 9AB2     		uxth	r2, r3
+ 837 0076 099B     		ldr	r3, [sp, #36]
+ 838 0078 0633     		adds	r3, r3, #6
+ 839 007a 12B2     		sxth	r2, r2
+ 840 007c 9A80     		strh	r2, [r3, #4]	@ movhi
+ 841              	.L28:
+ 247:src/main.c    ****     }
+ 248:src/main.c    **** 
+ 249:src/main.c    ****     data_buffer[1].x = data_buffer[1].x / 10 * 10;
+ 842              		.loc 1 249 35
+ 843 007e 099B     		ldr	r3, [sp, #36]
+ 844 0080 0633     		adds	r3, r3, #6
+ 845              		.loc 1 249 38
+ 846 0082 B3F90030 		ldrsh	r3, [r3]
+ 847              		.loc 1 249 46
+ 848 0086 394A     		ldr	r2, .L29+16
+ 849 0088 82FB0312 		smull	r1, r2, r2, r3
+ 850 008c 9210     		asrs	r2, r2, #2
+ 851 008e DB17     		asrs	r3, r3, #31
+ 852 0090 D31A     		subs	r3, r2, r3
+ 853 0092 1BB2     		sxth	r3, r3
+ 854 0094 9BB2     		uxth	r3, r3
+ 855 0096 1A46     		mov	r2, r3	@ movhi
+ 856 0098 9200     		lsls	r2, r2, #2
+ 857 009a 1344     		add	r3, r3, r2
+ 858 009c 5B00     		lsls	r3, r3, #1
+ 859 009e 9AB2     		uxth	r2, r3
+ 860              		.loc 1 249 16
+ 861 00a0 099B     		ldr	r3, [sp, #36]
+ 862 00a2 0633     		adds	r3, r3, #6
+ 863              		.loc 1 249 46
+ 864 00a4 12B2     		sxth	r2, r2
+ 865              		.loc 1 249 22
+ 866 00a6 1A80     		strh	r2, [r3]	@ movhi
+ 250:src/main.c    ****     data_buffer[1].y = data_buffer[1].y / 100 * 100;
+ 867              		.loc 1 250 35
+ 868 00a8 099B     		ldr	r3, [sp, #36]
+ 869 00aa 0633     		adds	r3, r3, #6
+ 870              		.loc 1 250 38
+ 871 00ac B3F90230 		ldrsh	r3, [r3, #2]
+ 872              		.loc 1 250 47
+ 873 00b0 2F4A     		ldr	r2, .L29+20
+ 874 00b2 82FB0312 		smull	r1, r2, r2, r3
+ 875 00b6 5211     		asrs	r2, r2, #5
+ 876 00b8 DB17     		asrs	r3, r3, #31
+ 877 00ba D31A     		subs	r3, r2, r3
+ 878 00bc 1BB2     		sxth	r3, r3
+ 879 00be 9BB2     		uxth	r3, r3
+ 880 00c0 1A46     		mov	r2, r3	@ movhi
+ 881 00c2 9200     		lsls	r2, r2, #2
+ 882 00c4 1344     		add	r3, r3, r2
+ 883 00c6 1A46     		mov	r2, r3	@ movhi
+ 884 00c8 9100     		lsls	r1, r2, #2
+ 885 00ca 1A46     		mov	r2, r3	@ movhi
+ 886 00cc 0B46     		mov	r3, r1	@ movhi
+ 887 00ce 1344     		add	r3, r3, r2
+ 888 00d0 9B00     		lsls	r3, r3, #2
+ 889 00d2 9AB2     		uxth	r2, r3
+ 890              		.loc 1 250 16
+ 891 00d4 099B     		ldr	r3, [sp, #36]
+ 892 00d6 0633     		adds	r3, r3, #6
+ 893              		.loc 1 250 47
+ 894 00d8 12B2     		sxth	r2, r2
+ 895              		.loc 1 250 22
+ 896 00da 5A80     		strh	r2, [r3, #2]	@ movhi
+ 251:src/main.c    ****     data_buffer[1].z = data_buffer[1].z / 10 * 10;      // 粗糙滤波
+ 897              		.loc 1 251 35
+ 898 00dc 099B     		ldr	r3, [sp, #36]
+ 899 00de 0633     		adds	r3, r3, #6
+ 900              		.loc 1 251 38
+ 901 00e0 B3F90430 		ldrsh	r3, [r3, #4]
+ 902              		.loc 1 251 46
+ 903 00e4 214A     		ldr	r2, .L29+16
+ 904 00e6 82FB0312 		smull	r1, r2, r2, r3
+ 905 00ea 9210     		asrs	r2, r2, #2
+ 906 00ec DB17     		asrs	r3, r3, #31
+ 907 00ee D31A     		subs	r3, r2, r3
+ 908 00f0 1BB2     		sxth	r3, r3
+ 909 00f2 9BB2     		uxth	r3, r3
+ 910 00f4 1A46     		mov	r2, r3	@ movhi
+ 911 00f6 9200     		lsls	r2, r2, #2
+ 912 00f8 1344     		add	r3, r3, r2
+ 913 00fa 5B00     		lsls	r3, r3, #1
+ 914 00fc 9AB2     		uxth	r2, r3
+ 915              		.loc 1 251 16
+ 916 00fe 099B     		ldr	r3, [sp, #36]
+ 917 0100 0633     		adds	r3, r3, #6
+ 918              		.loc 1 251 46
+ 919 0102 12B2     		sxth	r2, r2
+ 920              		.loc 1 251 22
+ 921 0104 9A80     		strh	r2, [r3, #4]	@ movhi
+ 252:src/main.c    **** 
+ 253:src/main.c    ****     imu660rb_physical_data_struct acc_phy, gyro_phy;
+ 254:src/main.c    **** 
+ 255:src/main.c    ****     // 获取物理量数据（已去除零偏）
+ 256:src/main.c    ****     imu660rb_get_physical_acc((imu660rb_measurement_data_struct *)ptr, IMU_ACC_RANGE_SGN_8G, &acc_p
+ 922              		.loc 1 256 5
+ 923 0106 06AB     		add	r3, sp, #24
+ 924 0108 1A46     		mov	r2, r3
+ 925 010a 0421     		movs	r1, #4
+ 926 010c 0098     		ldr	r0, [sp]
+ 927 010e FFF7FEFF 		bl	imu660rb_get_physical_acc
+ 257:src/main.c    ****     imu660rb_get_physical_gyro((imu660rb_measurement_data_struct *)ptr + 1, IMU_GYRO_RANGE_SGN_2000
+ 928              		.loc 1 257 5
+ 929 0112 009B     		ldr	r3, [sp]
+ 930 0114 0633     		adds	r3, r3, #6
+ 931 0116 03AA     		add	r2, sp, #12
+ 932 0118 0621     		movs	r1, #6
+ 933 011a 1846     		mov	r0, r3
+ 934 011c FFF7FEFF 		bl	imu660rb_get_physical_gyro
+ 258:src/main.c    **** 
+ 259:src/main.c    ****     // 传入四元数算法
+ 260:src/main.c    ****     quaternion_update(
+ 935              		.loc 1 260 5
+ 936 0120 DDED067A 		vldr.32	s15, [sp, #24]
+ 937 0124 9DED077A 		vldr.32	s14, [sp, #28]
+ 938 0128 DDED086A 		vldr.32	s13, [sp, #32]
+ 939 012c 9DED036A 		vldr.32	s12, [sp, #12]
+ 940 0130 DDED045A 		vldr.32	s11, [sp, #16]
+ 941 0134 9DED055A 		vldr.32	s10, [sp, #20]
+ 942 0138 F0EE452A 		vmov.f32	s5, s10
+ 943 013c B0EE652A 		vmov.f32	s4, s11
+ 944 0140 F0EE461A 		vmov.f32	s3, s12
+ 945 0144 B0EE661A 		vmov.f32	s2, s13
+ 946 0148 F0EE470A 		vmov.f32	s1, s14
+ 947 014c B0EE670A 		vmov.f32	s0, s15
+ 948 0150 FFF7FEFF 		bl	quaternion_update
+ 261:src/main.c    ****         acc_phy.x, acc_phy.y, acc_phy.z,
+ 262:src/main.c    ****         gyro_phy.x, gyro_phy.y, gyro_phy.z
+ 263:src/main.c    ****     );
+ 264:src/main.c    **** }
+ 949              		.loc 1 264 1
+ 950 0154 00BF     		nop
+ 951 0156 0BB0     		add	sp, sp, #44
+ 952              		.cfi_def_cfa_offset 4
+ 953              		@ sp needed
+ 954 0158 5DF804FB 		ldr	pc, [sp], #4
+ 955              	.L30:
+ 956              		.align	2
+ 957              	.L29:
+ 958 015c 00000000 		.word	calibration_done
+ 959 0160 00000000 		.word	gyro_bias_x
+ 960 0164 00000000 		.word	gyro_bias_y
+ 961 0168 00000000 		.word	gyro_bias_z
+ 962 016c 67666666 		.word	1717986919
+ 963 0170 1F85EB51 		.word	1374389535
+ 964              		.cfi_endproc
+ 965              	.LFE483:
+ 967              		.section	.text.RTK_pit_handler,"ax",%progbits
+ 968              		.align	1
+ 969              		.p2align 4,,15
+ 970              		.global	RTK_pit_handler
+ 971              		.syntax unified
+ 972              		.thumb
+ 973              		.thumb_func
+ 975              	RTK_pit_handler:
+ 976              	.LFB484:
+ 265:src/main.c    **** 
+ 266:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 267:src/main.c    **** // 函数简介     RTK周期中断触发函数
+ 268:src/main.c    **** // 参数说明     event           事件
+ 269:src/main.c    **** // 参数说明     *ptr            用户传参句柄
+ 270:src/main.c    **** // 返回参数     void            无返回值
+ 271:src/main.c    **** // 使用示例
+ 272:src/main.c    **** // 备注信息
+ 273:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 274:src/main.c    **** void RTK_pit_handler(uint32 event, void *ptr)
+ 275:src/main.c    **** {
+ 977              		.loc 1 275 1
+ 978              		.cfi_startproc
+ 979              		@ args = 0, pretend = 0, frame = 8
+ 980              		@ frame_needed = 0, uses_anonymous_args = 0
+ 981 0000 00B5     		push	{lr}
+ 982              		.cfi_def_cfa_offset 4
+ 983              		.cfi_offset 14, -4
+ 984 0002 83B0     		sub	sp, sp, #12
+ 985              		.cfi_def_cfa_offset 16
+ 986 0004 0190     		str	r0, [sp, #4]
+ 987 0006 0091     		str	r1, [sp]
+ 276:src/main.c    ****     (void)event;
+ 277:src/main.c    ****     (void)ptr;
+ 278:src/main.c    ****     gnss_data_parse();
+ 988              		.loc 1 278 5
+ 989 0008 FFF7FEFF 		bl	gnss_data_parse
+ 279:src/main.c    **** }
+ 990              		.loc 1 279 1
+ 991 000c 00BF     		nop
+ 992 000e 03B0     		add	sp, sp, #12
+ 993              		.cfi_def_cfa_offset 4
+ 994              		@ sp needed
+ 995 0010 5DF804FB 		ldr	pc, [sp], #4
+ 996              		.cfi_endproc
+ 997              	.LFE484:
+ 999              		.section	.text.encoder_pit_handler,"ax",%progbits
+ 1000              		.align	1
+ 1001              		.p2align 4,,15
+ 1002              		.global	encoder_pit_handler
+ 1003              		.syntax unified
+ 1004              		.thumb
+ 1005              		.thumb_func
+ 1007              	encoder_pit_handler:
+ 1008              	.LFB485:
+ 280:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 281:src/main.c    **** // 函数简介     周期中断触发函数
+ 282:src/main.c    **** // 参数说明     event           事件
+ 283:src/main.c    **** // 参数说明     *ptr            用户传参句柄
+ 284:src/main.c    **** // 返回参数     void            无返回值
+ 285:src/main.c    **** // 使用示例
+ 286:src/main.c    **** // 备注信息
+ 287:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 288:src/main.c    **** void encoder_pit_handler (uint32 event, void *ptr)
+ 289:src/main.c    **** {
+ 1009              		.loc 1 289 1
+ 1010              		.cfi_startproc
+ 1011              		@ args = 0, pretend = 0, frame = 8
+ 1012              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1013 0000 00B5     		push	{lr}
+ 1014              		.cfi_def_cfa_offset 4
+ 1015              		.cfi_offset 14, -4
+ 1016 0002 83B0     		sub	sp, sp, #12
+ 1017              		.cfi_def_cfa_offset 16
+ 1018 0004 0190     		str	r0, [sp, #4]
+ 1019 0006 0091     		str	r1, [sp]
+ 290:src/main.c    ****     (void)event;
+ 291:src/main.c    ****     zf_encoder_get_count(ENCODER_TIM2, (((int16 *)ptr) + 0));
+ 1020              		.loc 1 291 5
+ 1021 0008 0099     		ldr	r1, [sp]
+ 1022 000a 0220     		movs	r0, #2
+ 1023 000c FFF7FEFF 		bl	zf_encoder_get_count
+ 292:src/main.c    ****     zf_encoder_clear_count(ENCODER_TIM2);
+ 1024              		.loc 1 292 5
+ 1025 0010 0220     		movs	r0, #2
+ 1026 0012 FFF7FEFF 		bl	zf_encoder_clear_count
+ 293:src/main.c    **** }
+ 1027              		.loc 1 293 1
+ 1028 0016 00BF     		nop
+ 1029 0018 03B0     		add	sp, sp, #12
+ 1030              		.cfi_def_cfa_offset 4
+ 1031              		@ sp needed
+ 1032 001a 5DF804FB 		ldr	pc, [sp], #4
+ 1033              		.cfi_endproc
+ 1034              	.LFE485:
+ 1036 001e 00BF     		.section	.text.NFC_uart_handler,"ax",%progbits
+ 1037              		.align	1
+ 1038              		.p2align 4,,15
+ 1039              		.global	NFC_uart_handler
+ 1040              		.syntax unified
+ 1041              		.thumb
+ 1042              		.thumb_func
+ 1044              	NFC_uart_handler:
+ 1045              	.LFB486:
+ 294:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 295:src/main.c    **** // 函数简介     NFC串口中断触发函数
+ 296:src/main.c    **** // 参数说明     event           事件
+ 297:src/main.c    **** // 参数说明     *ptr            用户传参句柄
+ 298:src/main.c    **** // 返回参数     void            无返回值
+ 299:src/main.c    **** // 使用示例
+ 300:src/main.c    **** // 备注信息
+ 301:src/main.c    **** //-------------------------------------------------------------------------------------------------
+ 302:src/main.c    **** void NFC_uart_handler (uint32 event, void *ptr)
+ 303:src/main.c    **** {
+ 1046              		.loc 1 303 1
+ 1047              		.cfi_startproc
+ 1048              		@ args = 0, pretend = 0, frame = 16
+ 1049              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1050 0000 00B5     		push	{lr}
+ 1051              		.cfi_def_cfa_offset 4
+ 1052              		.cfi_offset 14, -4
+ 1053 0002 85B0     		sub	sp, sp, #20
+ 1054              		.cfi_def_cfa_offset 24
+ 1055 0004 0190     		str	r0, [sp, #4]
+ 1056 0006 0091     		str	r1, [sp]
+ 304:src/main.c    ****     zf_fifo_obj_struct *fifo_ptr = (zf_fifo_obj_struct *)ptr;
+ 1057              		.loc 1 304 25
+ 1058 0008 009B     		ldr	r3, [sp]
+ 1059 000a 0393     		str	r3, [sp, #12]
+ 305:src/main.c    ****     if(UART_INTERRUPT_STATE_RX & event)
+ 1060              		.loc 1 305 32
+ 1061 000c 019B     		ldr	r3, [sp, #4]
+ 1062 000e 03F00103 		and	r3, r3, #1
+ 1063              		.loc 1 305 7
+ 1064 0012 002B     		cmp	r3, #0
+ 1065 0014 0ED0     		beq	.L35
+ 1066              	.LBB2:
+ 306:src/main.c    ****     {
+ 307:src/main.c    ****         uint8 data_temp = 0;
+ 1067              		.loc 1 307 15
+ 1068 0016 0023     		movs	r3, #0
+ 1069 0018 8DF80B30 		strb	r3, [sp, #11]
+ 308:src/main.c    ****         zf_uart_query_byte(UART_2, &data_temp);
+ 1070              		.loc 1 308 9
+ 1071 001c 0DF10B03 		add	r3, sp, #11
+ 1072 0020 1946     		mov	r1, r3
+ 1073 0022 0120     		movs	r0, #1
+ 1074 0024 FFF7FEFF 		bl	zf_uart_query_byte
+ 309:src/main.c    ****         zf_fifo_write_element(fifo_ptr, data_temp);
+ 1075              		.loc 1 309 9
+ 1076 0028 9DF80B30 		ldrb	r3, [sp, #11]	@ zero_extendqisi2
+ 1077 002c 1946     		mov	r1, r3
+ 1078 002e 0398     		ldr	r0, [sp, #12]
+ 1079 0030 FFF7FEFF 		bl	zf_fifo_write_element
+ 1080              	.L35:
+ 1081              	.LBE2:
+ 310:src/main.c    ****     }
+ 311:src/main.c    **** }
+ 1082              		.loc 1 311 1
+ 1083 0034 00BF     		nop
+ 1084 0036 05B0     		add	sp, sp, #20
+ 1085              		.cfi_def_cfa_offset 4
+ 1086              		@ sp needed
+ 1087 0038 5DF804FB 		ldr	pc, [sp], #4
+ 1088              		.cfi_endproc
+ 1089              	.LFE486:
+ 1091              		.text
+ 1092              	.Letext0:
+ 1093              		.file 2 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 1094              		.file 3 "c:\\stellarstudio-7.0\\sdks\\tools-1.4.0\\toolchain\\arm\\mingw64_nt\\10.3-2021.10\\arm-n
+ 1095              		.file 4 "libraries/zf_common/zf_common_typedef.h"
+ 1096              		.file 5 "C:/StellarStudio-7.0/SDKS/StellarESDK-1.7.0/Modules/Platform/MCU/include/sr5e1/sr5e1xx.h"
+ 1097              		.file 6 "libraries/zf_common/zf_common_fifo.h"
+ 1098              		.file 7 "libraries/zf_driver/zf_driver_gpio.h"
+ 1099              		.file 8 "libraries/zf_driver/zf_driver_adc.h"
+ 1100              		.file 9 "libraries/zf_driver/zf_driver_can.h"
+ 1101              		.file 10 "libraries/zf_driver/zf_driver_encoder.h"
+ 1102              		.file 11 "libraries/zf_driver/zf_driver_exti.h"
+ 1103              		.file 12 "libraries/zf_driver/zf_driver_hrtim.h"
+ 1104              		.file 13 "libraries/zf_driver/zf_driver_interrupt.h"
+ 1105              		.file 14 "libraries/zf_driver/zf_driver_pit.h"
+ 1106              		.file 15 "libraries/zf_driver/zf_driver_pwm.h"
+ 1107              		.file 16 "libraries/zf_driver/zf_driver_spi.h"
+ 1108              		.file 17 "libraries/zf_driver/zf_driver_system.h"
+ 1109              		.file 18 "libraries/zf_driver/zf_driver_uart.h"
+ 1110              		.file 19 "libraries/zf_device/zf_device_imu_interface.h"
+ 1111              		.file 20 "libraries/zf_device/zf_device_imu660rb.h"
+ 1112              		.file 21 "libraries/zf_device/zf_device_wireless_interface.h"
+ 1113              		.file 22 "libraries/zf_device/zf_device_display_interface.h"
+ 1114              		.file 23 "libraries/zf_device/zf_device_ips200.h"
+ 1115              		.file 24 "libraries/zf_device/zf_device_gnss.h"
+ 1116              		.file 25 "libraries/zf_device/zf_device_uart_receiver.h"
+ 1117              		.file 26 "user_code/quaternion.h"
+ 1118              		.file 27 "user_code/pid.h"
+ 1119              		.file 28 "user_code/GPS.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 main.c
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:19     .data.channel_ptr:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:22     .data.channel_ptr:00000000 channel_ptr
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:29     .bss.imu_data:00000000 imu_data
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:26     .bss.imu_data:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:36     .bss.imu_physical_data:00000000 imu_physical_data
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:33     .bss.imu_physical_data:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:43     .bss.imu_pid:00000000 imu_pid
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:40     .bss.imu_pid:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:50     .bss.current_angles:00000000 current_angles
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:47     .bss.current_angles:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:56     .bss.key:00000000 key
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:57     .bss.key:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:62     .bss.calibration_done:00000000 calibration_done
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:63     .bss.calibration_done:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:65     .rodata:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:90     .text.main:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:97     .text.main:00000000 main
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:460    .text.main:00000310 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:769    .text.imu_pit_handler:00000000 imu_pit_handler
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:975    .text.RTK_pit_handler:00000000 RTK_pit_handler
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:1007   .text.encoder_pit_handler:00000000 encoder_pit_handler
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:506    .text.main:000003c0 $t
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:742    .text.main:000005c0 $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:762    .text.imu_pit_handler:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:958    .text.imu_pit_handler:0000015c $d
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:968    .text.RTK_pit_handler:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:1000   .text.encoder_pit_handler:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:1037   .text.NFC_uart_handler:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cchG3Kzn.s:1044   .text.NFC_uart_handler:00000000 NFC_uart_handler
+                           .group:00000000 wm4.0.1ea29c7543256e0887205fa7f8c557c8
+                           .group:00000000 wm4._newlib_version.h.4.bfdf54b0af045d4a71376ae00f63a22c
+                           .group:00000000 wm4.newlib.h.18.1c9fedb6b3cd797cff253cc0fd593ef2
+                           .group:00000000 wm4.ieeefp.h.77.2bc94c1d1ed8b02df437510a04ac1e45
+                           .group:00000000 wm4.features.h.22.026edb2397769f4ae13f35900dbdb560
+                           .group:00000000 wm4.config.h.224.c701144a7b0518c6ee9b9b5465b79f81
+                           .group:00000000 wm4._ansi.h.31.de524f58584151836e90d8620a16f8e8
+                           .group:00000000 wm4.stdio.h.31.7c0e28c411445f3f9c5b11accf882760
+                           .group:00000000 wm4._default_types.h.6.959254cf5f09734ea7516c89e8bb21bd
+                           .group:00000000 wm4.stddef.h.181.c3f52a3b0f4c288bddb5dda1562858e2
+                           .group:00000000 wm4.cdefs.h.49.a54b2d5c07711bc7320a3fea9f12cb56
+                           .group:00000000 wm4.stddef.h.39.c161261b198ee3a963897077fd6fa59f
+                           .group:00000000 wm4.stdarg.h.34.3a23a216c0c293b3d2ea2e89281481e6
+                           .group:00000000 wm4._types.h.20.dd0d04dca3800a0d2a6129b87f3adbb2
+                           .group:00000000 wm4.stddef.h.155.3588ebfdd1e8c7ede80509bb9c3b8009
+                           .group:00000000 wm4._types.h.127.34941de1b2539d59d5cac00e0dd27a45
+                           .group:00000000 wm4.reent.h.17.e292bf8b0bec6c96e131a54347145a30
+                           .group:00000000 wm4.lock.h.2.1461d1fff82dffe8bfddc23307f6484f
+                           .group:00000000 wm4.reent.h.77.dcd6129ff07fe81bd5636db29abe53b2
+                           .group:00000000 wm4.types.h.40.8b6acba56cefbb11746718204edc8f5e
+                           .group:00000000 wm4._stdint.h.10.c24fa3af3bc1706662bb5593a907e841
+                           .group:00000000 wm4._endian.h.31.65a10590763c3dde1ac4a7f66d7d4891
+                           .group:00000000 wm4.endian.h.9.49f3a4695c1b61e8a0808de3c4a106cb
+                           .group:00000000 wm4._timeval.h.32.bec3221fa7a9bb0bdde696c9c57e47d2
+                           .group:00000000 wm4.timespec.h.41.d855182eb0e690443ab8651bcedca6e1
+                           .group:00000000 wm4.select.h.19.40cd3f2bfc456b193b790c2754690ebf
+                           .group:00000000 wm4.types.h.51.5571ec98f267d17d3c670b7a3ba33afa
+                           .group:00000000 wm4.sched.h.22.c60982713a5c428609783c78f9c78d95
+                           .group:00000000 wm4._pthreadtypes.h.36.fcee9961c35163dde6267ef772ad1972
+                           .group:00000000 wm4.stdio.h.2.4aa87247282eca6c8f36f9de33d8df1a
+                           .group:00000000 wm4.stdio.h.81.932d0c162786b883f622b8d05c120c78
+                           .group:00000000 wm4._intsup.h.10.48bafbb683905c4daa4565a85aeeb264
+                           .group:00000000 wm4.stdint.h.23.d53047a68f4a85177f80b422d52785ed
+                           .group:00000000 wm4.string.h.8.c4b8571ce60dff2817f43fec8b86aecd
+                           .group:00000000 wm4.stddef.h.155.ba788add86a0e365f264484f110c3c29
+                           .group:00000000 wm4.sr5e1xx.h.22.e5c808533cc52ed19fb0830cd7d98924
+                           .group:00000000 wm4.cmsis_version.h.32.0f826810625204eca22a19868bdc7586
+                           .group:00000000 wm4.core_cm7.h.66.8ab2de36917d6fcae18019067fda13e0
+                           .group:00000000 wm4.cmsis_gcc.h.26.498d0ad17a45fc9ef20fdc01caf02259
+                           .group:00000000 wm4.core_cm7.h.174.43edb295ecdaadad738f48ba6011ffad
+                           .group:00000000 wm4.mpu_armv7.h.32.83326921a797fa9d6f70449916b4b839
+                           .group:00000000 wm4.cachel1_armv7.h.32.abd77761a989e008b0c60891114a33c7
+                           .group:00000000 wm4.SR5E1_ADC.h.14.21608e6aff125ba995dd767d6d8dc311
+                           .group:00000000 wm4.SR5E1_CEM.h.14.01fe5742c8f1ae35b1f3af05932f702e
+                           .group:00000000 wm4.SR5E1_CMU.h.14.2617b38b159abe38028862394531e06d
+                           .group:00000000 wm4.SR5E1_COMP.h.14.4b6fdfe4f5f7fd9bedf3a99b98bdf4cd
+                           .group:00000000 wm4.SR5E1_CORDIC.h.14.354fbf7c9eaf6963d38eaa25cf28ffe8
+                           .group:00000000 wm4.SR5E1_CRC.h.14.c64d0f7767671ddb92e9ead0a1162100
+                           .group:00000000 wm4.SR5E1_DAC.h.14.8c26a0ff04b0cfeb55306cc3f22187b8
+                           .group:00000000 wm4.SR5E1_DBGMCU.h.14.427df893d53a8044654f017ba01c25ed
+                           .group:00000000 wm4.SR5E1_DMA.h.14.a7f9a92f844b40a86965798c2e64240b
+                           .group:00000000 wm4.SR5E1_DMAMUX.h.14.471b3b4dfd4d41515f1df49493698866
+                           .group:00000000 wm4.SR5E1_EXTI.h.14.a325ea3fe89cd84894660551c33241ea
+                           .group:00000000 wm4.SR5E1_FCCU.h.14.0ebf0f0f36e079d28613ad2c80e17e23
+                           .group:00000000 wm4.SR5E1_FDCAN.h.14.ac57101fad5dbc798bfb93f34c899de7
+                           .group:00000000 wm4.SR5E1_FLASH_REG_ITF.h.14.d23d1d44923f9b20b8c8fdb51d66aefd
+                           .group:00000000 wm4.SR5E1_GPIO.h.14.1c84071e130d7c64b62470ab0e18a1f1
+                           .group:00000000 wm4.SR5E1_HRTIM.h.24.03932387d2522e6bd5c772a4edaf2f5d
+                           .group:00000000 wm4.SR5E1_HSEM.h.14.cbe70eee519f01b16452c3f8c99d8df1
+                           .group:00000000 wm4.SR5E1_I2C.h.14.350ba3e0f4fd57828457efa80135c36c
+                           .group:00000000 wm4.SR5E1_IMA.h.14.62b7088985ab2b7ce9b030a02daa1f7d
+                           .group:00000000 wm4.SR5E1_IWDG.h.14.20b7c5f05cf7ae94464c360d7af3660d
+                           .group:00000000 wm4.SR5E1_MEMU.h.14.04bad7ae4c52ce334a4fc900aad2ae5b
+                           .group:00000000 wm4.SR5E1_NVM_CTRL.h.14.5f442617f0628d4f16258f211c614ef9
+                           .group:00000000 wm4.SR5E1_PLLDIG.h.14.bd87a8e6917eee17dae2f312c8e5fa53
+                           .group:00000000 wm4.SR5E1_PMC_DIG.h.14.54173b566c6656344766ec4ef46c9281
+                           .group:00000000 wm4.SR5E1_RCC.h.14.56734803c71534de286e793a53649740
+                           .group:00000000 wm4.SR5E1_RTC.h.14.47037cbc7d8175dbf2be1dc0bb955e3f
+                           .group:00000000 wm4.SR5E1_SD_ADC.h.14.552b97d0b8f3c1fd4df6d8964b2f1a80
+                           .group:00000000 wm4.SR5E1_SMPU.h.14.8ce5bb6d5d7c579cd725f492f46e9085
+                           .group:00000000 wm4.SR5E1_SPI.h.14.42d52112e540f85ade4d9135f8b87d72
+                           .group:00000000 wm4.SR5E1_SSCM.h.14.8e6a2ad0ce5fca422fc3d69939b6125b
+                           .group:00000000 wm4.SR5E1_SYSCFG.h.14.02b969490118ce4069914b5e94f7ca65
+                           .group:00000000 wm4.SR5E1_TDM.h.14.a40ed7928cad243a57fd233fccf01ad2
+                           .group:00000000 wm4.SR5E1_TIM.h.14.f17572f4c16f3f152b8164ad25c34f5b
+                           .group:00000000 wm4.SR5E1_UART.h.14.eec3ab82b02b3bdb3de500483675b83f
+                           .group:00000000 wm4.SR5E1_WWDG.h.14.59b45efc70e442cc6ef03702aad4ad88
+                           .group:00000000 wm4.stdbool.h.29.07dce69c3b78884144b7f7bd19483461
+                           .group:00000000 wm4.typedefs.h.36.07fe3956b4e751037cfee70edcd0b397
+                           .group:00000000 wm4.irq_numbers.h.38.6294b95aed1bf7b3a2cda0eed8ce8f57
+                           .group:00000000 wm4.regs.h.23.2ac145b4f57126d16daed5fbd86d99c6
+                           .group:00000000 wm4.stdarg.h.31.3fa7b8f6daaa31edd1696c08c77f2a73
+                           .group:00000000 wm4.stdlib.h.13.4ed386f5c1a80d71e72172885d946ef2
+                           .group:00000000 wm4.alloca.h.8.dfc0c703c47ec3e69746825b17d9e66d
+                           .group:00000000 wm4.stdlib.h.56.f4862cfbf4363a1db01842d5bdf72c18
+                           .group:00000000 wm4.zf_common_typedef.h.47.8c368673885c9d07221c267e15ab1069
+                           .group:00000000 wm4.zf_common_debug.h.33.ccdd5203a5e510a964ba4c22faca44c8
+                           .group:00000000 wm4.zf_common_fifo.h.33.e14e643902e26e4e65437b5b20e82793
+                           .group:00000000 wm4.zf_common_function.h.33.02bbfb055e8ee322bc4f8b14ea195da2
+                           .group:00000000 wm4.zf_common_memory.h.33.d43647290a4d62164ff2ec77cadb89d8
+                           .group:00000000 wm4.saradc.h.25.e5a70aef9ec4fddf35f2b7cc0c9cf1bc
+                           .group:00000000 wm4.gpio.h.25.d41a0c19fda8c2de42e666afb48ec15a
+                           .group:00000000 wm4.zf_driver_gpio.h.65.5a4d2084c62fed7c22fdca02e748c198
+                           .group:00000000 wm4.zf_driver_adc.h.64.349fb433626b42172b0e0fee038428ca
+                           .group:00000000 wm4.can.h.25.3cfccb6c630ada4f656cab597e231e58
+                           .group:00000000 wm4.dmamux.h.25.337aea179f6dbcc87c52aae26d38f76e
+                           .group:00000000 wm4.clock_cfg.h.24.0aed3cee9ecce947225a304181294191
+                           .group:00000000 wm4.clock.h.37.80236c5607fdd9eb9275e5111a4191c3
+                           .group:00000000 wm4.irq.h.37.78714f25754c8b09d1428599101f6cc7
+                           .group:00000000 wm4.dma.h.40.f77dd217a06ceba13a3cfdd4102a73c1
+                           .group:00000000 wm4.zf_driver_can.h.67.fd10d2fa867eb54a54d4b57027d73a60
+                           .group:00000000 wm4.tim.h.25.6e7ad96569e77a70a68b9b4cc59f54f2
+                           .group:00000000 wm4.zf_driver_timer.h.33.8df253b6990d9861816977209fb11e90
+                           .group:00000000 wm4.zf_driver_encoder.h.57.7e32999f25354fac086ca226b0c630d4
+                           .group:00000000 wm4.exti.h.25.21597c35d9630b0985ce88d2c41f4ea4
+                           .group:00000000 wm4.zf_driver_exti.h.59.1b02b8083e5295ef5baaf83905d59395
+                           .group:00000000 wm4.ssd_types.h.29.b861f4e6d39d333f931bfc05b964cb1c
+                           .group:00000000 wm4.ssd_C55.h.37.dad650468a97d71aff4dd65ca085590f
+                           .group:00000000 wm4.zf_driver_flash.h.59.db93fe574c35ea9e79030063fbb35a13
+                           .group:00000000 wm4.hrtim.h.25.1601aea9d4a0da1de8252dc444355251
+                           .group:00000000 wm4.zf_driver_hrtim.h.64.cd8d2bf3bf1c471ea59d9c61e4a721d7
+                           .group:00000000 wm4.zf_driver_interrupt.h.33.2c3660dcc36cb090bd75b8f180c14f27
+                           .group:00000000 wm4.zf_driver_pit.h.33.834ac720a62e09d5603a9557331e9049
+                           .group:00000000 wm4.zf_driver_pwm.h.33.7d80487064ca712231a453396685a551
+                           .group:00000000 wm4.zf_driver_rcc.h.33.4c228cf40a79e1b974b30d5a9a3a77a7
+                           .group:00000000 wm4.zf_driver_soft_iic.h.33.9067bd298084134f63c61c075f95fa2b
+                           .group:00000000 wm4.zf_driver_soft_spi.h.33.a938287c023905d97cafe56e4be63674
+                           .group:00000000 wm4.zf_driver_spi.h.62.950b1f52ed365034df2907601137b455
+                           .group:00000000 wm4.zf_driver_system.h.33.370922a9681b47d575d2c83d302a180b
+                           .group:00000000 wm4.zf_driver_uart.h.70.ffcf3694337ad0b4066179f1abd5d668
+                           .group:00000000 wm4.zf_device_imu_interface.h.40.344a2c93b973b58cee305ff406fc3e84
+                           .group:00000000 wm4.zf_device_imu660rb.h.37.b47c39afb47c89c2c82bd28e76457042
+                           .group:00000000 wm4.zf_device_imu963ra.h.37.e773f164af6f72dd1b0b6c1242bf99b4
+                           .group:00000000 wm4.zf_device_wireless_interface.h.40.da0a07f107014cb0888a26f281971a5b
+                           .group:00000000 wm4.zf_device_display_interface.h.79.d8df25e52245efbd97fd6415c8db0a72
+                           .group:00000000 wm4.zf_device_ips200.h.37.957fc5e8b291701a6f6b47207b045b77
+                           .group:00000000 wm4.math.h.13.b6595ad277a643a6127e1a4515a98f91
+                           .group:00000000 wm4.zf_device_gnss.h.66.39fe53860d2d190725612db126de8287
+                           .group:00000000 wm4.zf_device_key.h.45.b12f9096d8cc68f085b8fe9fe5b730db
+                           .group:00000000 wm4.zf_device_uart_receiver.h.43.9ac9496dcaa4780ef86d21fa439379b4
+                           .group:00000000 wm4.servo.h.9.527c6b66c6bfd7e85b3aa357b7b41a9a
+                           .group:00000000 wm4.key.h.15.a62367548c3fda3e4e7a36cd730b6143
+                           .group:00000000 wm4.quaternion.h.15.d2ef326a4e7ac21d4b5d449e696cdef0
+
+UNDEFINED SYMBOLS
+uart_receiver
+zf_system_clock_init
+debug_init
+dlw_led_init
+dlw_key_init
+dlw_moto_pwm_init
+dlw_servo_init
+dlw_remote_control_init
+dlw_imu660rb_init
+dlw_imu660rb_calibration
+quaternion_init
+pid_init
+pid_set_limits
+ips200_init
+dlw_gps_init
+dlw_nfc_usart_init
+encoder_PID_init
+zf_encoder_init
+zf_pit_ms_init
+zf_pit_set_interrupt_priority
+zf_delay_ms
+dlw_key_scan
+zf_gpio_set_level
+quaternion_get_euler
+display_interface_show_string
+display_interface_show_float
+gnss_get_two_points_azimuth
+rgb_flicker_handler
+GL_IMU_Flag
+display_interface_default_obj
+Target_point
+gnss_info
+virtual_north
+gnss_get_two_points_distance
+pid_compute
+dlw_servo_stabilize
+encoder_contorl_sudo
+dlw_remote_control_get_data
+dlw_servo_control
+dlw_moto_control
+GL_CRC
+dlw_nfc_usartdata_process
+left
+right
+imu660rb_get_acc
+imu660rb_get_gyro
+imu660rb_get_physical_acc
+imu660rb_get_physical_gyro
+quaternion_update
+gyro_bias_x
+gyro_bias_y
+gyro_bias_z
+gnss_data_parse
+zf_encoder_get_count
+zf_encoder_clear_count
+zf_uart_query_byte
+zf_fifo_write_element

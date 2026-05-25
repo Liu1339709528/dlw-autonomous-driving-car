@@ -1,0 +1,839 @@
+   1              		.cpu cortex-m7
+   2              		.arch armv7e-m
+   3              		.fpu fpv5-d16
+   4              		.eabi_attribute 28, 1
+   5              		.eabi_attribute 20, 1
+   6              		.eabi_attribute 21, 1
+   7              		.eabi_attribute 23, 3
+   8              		.eabi_attribute 24, 1
+   9              		.eabi_attribute 25, 1
+  10              		.eabi_attribute 26, 1
+  11              		.eabi_attribute 30, 6
+  12              		.eabi_attribute 34, 1
+  13              		.eabi_attribute 18, 4
+  14              		.file	"servo.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.dlw_servo_init,"ax",%progbits
+  19              		.align	1
+  20              		.p2align 4,,15
+  21              		.global	dlw_servo_init
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	dlw_servo_init:
+  27              	.LFB482:
+  28              		.file 1 "user_code/servo.c"
+   1:user_code/servo.c **** /*
+   2:user_code/servo.c ****  * servo.c
+   3:user_code/servo.c ****  *
+   4:user_code/servo.c ****  *  Created on: 2025年6月3日
+   5:user_code/servo.c ****  *      Author: 刘珈琪
+   6:user_code/servo.c ****  */
+   7:user_code/servo.c **** 
+   8:user_code/servo.c **** #include "servo.h"
+   9:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+  10:user_code/servo.c **** // 函数简介     舵机初始化
+  11:user_code/servo.c **** // 参数说明     pin                 舵机PWM引脚 (详见 zf_driver_pwm.h)
+  12:user_code/servo.c **** // 参数说明     init_servo_duty     要设置的初始化占空比
+  13:user_code/servo.c **** // 返回参数     uint8               操作状态 ZF_NO_ERROR / TIM_OPERATION_DONE - 完成 其�
+  14:user_code/servo.c **** // 使用示例     dlw_servo_init(PWM_TIM8_CH1_I0, 90);
+  15:user_code/servo.c **** // 备注信息     PWM_TIM8_CH1_I0中I0引脚对应舵机的信号接口
+  16:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+  17:user_code/servo.c **** uint8 dlw_servo_init(zf_pwm_positive_channel_enum pin, uint16 init_servo_duty)
+  18:user_code/servo.c **** {
+  29              		.loc 1 18 1
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 16
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33 0000 00B5     		push	{lr}
+  34              		.cfi_def_cfa_offset 4
+  35              		.cfi_offset 14, -4
+  36 0002 85B0     		sub	sp, sp, #20
+  37              		.cfi_def_cfa_offset 24
+  38 0004 0190     		str	r0, [sp, #4]
+  39 0006 0B46     		mov	r3, r1
+  40 0008 ADF80230 		strh	r3, [sp, #2]	@ movhi
+  19:user_code/servo.c ****     servo_operation_state_enum return_state = SERVO_ERROR_UNKNOW;
+  41              		.loc 1 19 32
+  42 000c 0123     		movs	r3, #1
+  43 000e 8DF80F30 		strb	r3, [sp, #15]
+  20:user_code/servo.c ****     do
+  21:user_code/servo.c ****     {
+  22:user_code/servo.c ****         if(init_servo_duty < SERVO_MIN_PULSE || init_servo_duty > SERVO_MAX_PULSE)
+  44              		.loc 1 22 11
+  45 0012 BDF80230 		ldrh	r3, [sp, #2]
+  46 0016 B3F51B7F 		cmp	r3, #620
+  47 001a 04D3     		bcc	.L2
+  48              		.loc 1 22 46 discriminator 1
+  49 001c BDF80230 		ldrh	r3, [sp, #2]
+  50 0020 B3F5527F 		cmp	r3, #840
+  51 0024 03D9     		bls	.L3
+  52              	.L2:
+  23:user_code/servo.c ****         {
+  24:user_code/servo.c ****             return_state = SERVO_ERROR_PULSE_OUT_OF_RANGE;
+  53              		.loc 1 24 26
+  54 0026 0323     		movs	r3, #3
+  55 0028 8DF80F30 		strb	r3, [sp, #15]
+  25:user_code/servo.c ****             break;
+  56              		.loc 1 25 13
+  57 002c 31E0     		b	.L4
+  58              	.L3:
+  26:user_code/servo.c ****         }
+  27:user_code/servo.c **** 
+  28:user_code/servo.c ****         zf_pwm_module_init(PWM_TIM8, PWM_ALIGNMENT_EDGE, 50);
+  59              		.loc 1 28 9
+  60 002e 3222     		movs	r2, #50
+  61 0030 0021     		movs	r1, #0
+  62 0032 0120     		movs	r0, #1
+  63 0034 FFF7FEFF 		bl	zf_pwm_module_init
+  29:user_code/servo.c ****         zf_pwm_channel_init(pin, SERVO_MED_PULSE);
+  64              		.loc 1 29 9
+  65 0038 40F2EE21 		movw	r1, #750
+  66 003c 0198     		ldr	r0, [sp, #4]
+  67 003e FFF7FEFF 		bl	zf_pwm_channel_init
+  30:user_code/servo.c **** 
+  31:user_code/servo.c ****         dlw_servo_set_duty(pin, 800);
+  68              		.loc 1 31 9
+  69 0042 4FF44871 		mov	r1, #800
+  70 0046 0198     		ldr	r0, [sp, #4]
+  71 0048 FFF7FEFF 		bl	dlw_servo_set_duty
+  32:user_code/servo.c ****         zf_delay_ms(500);
+  72              		.loc 1 32 9
+  73 004c 4FF4FA70 		mov	r0, #500
+  74 0050 FFF7FEFF 		bl	zf_delay_ms
+  33:user_code/servo.c **** 
+  34:user_code/servo.c ****         dlw_servo_set_duty(pin, 650);
+  75              		.loc 1 34 9
+  76 0054 40F28A21 		movw	r1, #650
+  77 0058 0198     		ldr	r0, [sp, #4]
+  78 005a FFF7FEFF 		bl	dlw_servo_set_duty
+  35:user_code/servo.c ****         zf_delay_ms(500);
+  79              		.loc 1 35 9
+  80 005e 4FF4FA70 		mov	r0, #500
+  81 0062 FFF7FEFF 		bl	zf_delay_ms
+  36:user_code/servo.c **** 
+  37:user_code/servo.c ****         dlw_servo_set_duty(pin, 750);
+  82              		.loc 1 37 9
+  83 0066 40F2EE21 		movw	r1, #750
+  84 006a 0198     		ldr	r0, [sp, #4]
+  85 006c FFF7FEFF 		bl	dlw_servo_set_duty
+  38:user_code/servo.c ****         zf_delay_ms(500);
+  86              		.loc 1 38 9
+  87 0070 4FF4FA70 		mov	r0, #500
+  88 0074 FFF7FEFF 		bl	zf_delay_ms
+  39:user_code/servo.c **** 
+  40:user_code/servo.c ****         dlw_servo_set_duty(pin, init_servo_duty);
+  89              		.loc 1 40 9
+  90 0078 BDF80230 		ldrh	r3, [sp, #2]
+  91 007c 1946     		mov	r1, r3
+  92 007e 0198     		ldr	r0, [sp, #4]
+  93 0080 FFF7FEFF 		bl	dlw_servo_set_duty
+  41:user_code/servo.c ****         zf_delay_ms(1000);
+  94              		.loc 1 41 9
+  95 0084 4FF47A70 		mov	r0, #1000
+  96 0088 FFF7FEFF 		bl	zf_delay_ms
+  42:user_code/servo.c **** 
+  43:user_code/servo.c ****         return_state = SERVO_OK;
+  97              		.loc 1 43 22
+  98 008c 0023     		movs	r3, #0
+  99 008e 8DF80F30 		strb	r3, [sp, #15]
+ 100              	.L4:
+  44:user_code/servo.c ****     }while(0);
+  45:user_code/servo.c **** 
+  46:user_code/servo.c ****     return return_state;
+ 101              		.loc 1 46 12
+ 102 0092 9DF80F30 		ldrb	r3, [sp, #15]	@ zero_extendqisi2
+  47:user_code/servo.c **** }
+ 103              		.loc 1 47 1
+ 104 0096 1846     		mov	r0, r3
+ 105 0098 05B0     		add	sp, sp, #20
+ 106              		.cfi_def_cfa_offset 4
+ 107              		@ sp needed
+ 108 009a 5DF804FB 		ldr	pc, [sp], #4
+ 109              		.cfi_endproc
+ 110              	.LFE482:
+ 112 009e 00BF     		.section	.text.dlw_servo_set_duty,"ax",%progbits
+ 113              		.align	1
+ 114              		.p2align 4,,15
+ 115              		.global	dlw_servo_set_duty
+ 116              		.syntax unified
+ 117              		.thumb
+ 118              		.thumb_func
+ 120              	dlw_servo_set_duty:
+ 121              	.LFB483:
+  48:user_code/servo.c **** 
+  49:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+  50:user_code/servo.c **** // 函数简介     舵机设置占空比
+  51:user_code/servo.c **** // 参数说明     pin                 舵机PWM引脚 (详见 zf_driver_pwm.h)
+  52:user_code/servo.c **** // 参数说明     servo_duty          要设置的占空比度数
+  53:user_code/servo.c **** // 返回参数     uint8               操作状态 ZF_NO_ERROR / TIM_OPERATION_DONE - 完成 其�
+  54:user_code/servo.c **** // 使用示例     dlw_servo_set_angle(PWM_TIM8_CH1_I0, 90);
+  55:user_code/servo.c **** // 备注信息     PWM_TIM8_CH1_I0中I0口对应舵机的信号接口
+  56:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+  57:user_code/servo.c **** uint8 dlw_servo_set_duty(zf_pwm_positive_channel_enum pin, uint32 servo_duty)
+  58:user_code/servo.c **** {
+ 122              		.loc 1 58 1
+ 123              		.cfi_startproc
+ 124              		@ args = 0, pretend = 0, frame = 16
+ 125              		@ frame_needed = 0, uses_anonymous_args = 0
+ 126 0000 00B5     		push	{lr}
+ 127              		.cfi_def_cfa_offset 4
+ 128              		.cfi_offset 14, -4
+ 129 0002 85B0     		sub	sp, sp, #20
+ 130              		.cfi_def_cfa_offset 24
+ 131 0004 0190     		str	r0, [sp, #4]
+ 132 0006 0091     		str	r1, [sp]
+  59:user_code/servo.c ****     servo_operation_state_enum return_state = SERVO_ERROR_UNKNOW;
+ 133              		.loc 1 59 32
+ 134 0008 0123     		movs	r3, #1
+ 135 000a 8DF80F30 		strb	r3, [sp, #15]
+  60:user_code/servo.c ****     do
+  61:user_code/servo.c ****     {
+  62:user_code/servo.c ****       if(servo_duty < SERVO_MIN_PULSE || servo_duty > SERVO_MAX_PULSE)
+ 136              		.loc 1 62 9
+ 137 000e 009B     		ldr	r3, [sp]
+ 138 0010 B3F51B7F 		cmp	r3, #620
+ 139 0014 03D3     		bcc	.L7
+ 140              		.loc 1 62 39 discriminator 1
+ 141 0016 009B     		ldr	r3, [sp]
+ 142 0018 B3F5527F 		cmp	r3, #840
+ 143 001c 03D9     		bls	.L8
+ 144              	.L7:
+  63:user_code/servo.c ****       {
+  64:user_code/servo.c ****           return_state = SERVO_ERROR_PULSE_OUT_OF_RANGE;
+ 145              		.loc 1 64 24
+ 146 001e 0323     		movs	r3, #3
+ 147 0020 8DF80F30 		strb	r3, [sp, #15]
+  65:user_code/servo.c ****           break;
+ 148              		.loc 1 65 11
+ 149 0024 06E0     		b	.L9
+ 150              	.L8:
+  66:user_code/servo.c ****       }
+  67:user_code/servo.c ****       zf_pwm_set_duty(pin, servo_duty);
+ 151              		.loc 1 67 7
+ 152 0026 0099     		ldr	r1, [sp]
+ 153 0028 0198     		ldr	r0, [sp, #4]
+ 154 002a FFF7FEFF 		bl	zf_pwm_set_duty
+  68:user_code/servo.c **** 
+  69:user_code/servo.c ****       return_state = SERVO_OK;
+ 155              		.loc 1 69 20
+ 156 002e 0023     		movs	r3, #0
+ 157 0030 8DF80F30 		strb	r3, [sp, #15]
+ 158              	.L9:
+  70:user_code/servo.c ****     }while(0);
+  71:user_code/servo.c **** 
+  72:user_code/servo.c ****     return return_state;
+ 159              		.loc 1 72 12
+ 160 0034 9DF80F30 		ldrb	r3, [sp, #15]	@ zero_extendqisi2
+  73:user_code/servo.c **** }
+ 161              		.loc 1 73 1
+ 162 0038 1846     		mov	r0, r3
+ 163 003a 05B0     		add	sp, sp, #20
+ 164              		.cfi_def_cfa_offset 4
+ 165              		@ sp needed
+ 166 003c 5DF804FB 		ldr	pc, [sp], #4
+ 167              		.cfi_endproc
+ 168              	.LFE483:
+ 170              		.section	.text.dlw_servo_set_angle,"ax",%progbits
+ 171              		.align	1
+ 172              		.p2align 4,,15
+ 173              		.global	dlw_servo_set_angle
+ 174              		.syntax unified
+ 175              		.thumb
+ 176              		.thumb_func
+ 178              	dlw_servo_set_angle:
+ 179              	.LFB484:
+  74:user_code/servo.c **** 
+  75:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+  76:user_code/servo.c **** // 函数简介     舵机设置转动角度
+  77:user_code/servo.c **** // 参数说明     pin                 舵机PWM引脚 (详见 zf_driver_pwm.h)
+  78:user_code/servo.c **** // 参数说明     angle               要设置的转动的角度
+  79:user_code/servo.c **** // 返回参数     uint8               操作状态 ZF_NO_ERROR / TIM_OPERATION_DONE - 完成 其�
+  80:user_code/servo.c **** // 使用示例     dlw_servo_set_angle(PWM_TIM8_CH1_I0, 90);
+  81:user_code/servo.c **** // 备注信息     PWM_TIM8_CH1_I0中I0口对应舵机的信号接口
+  82:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+  83:user_code/servo.c **** uint8 dlw_servo_set_angle(zf_pwm_positive_channel_enum pin, float servo_angle)
+  84:user_code/servo.c **** {
+ 180              		.loc 1 84 1
+ 181              		.cfi_startproc
+ 182              		@ args = 0, pretend = 0, frame = 16
+ 183              		@ frame_needed = 0, uses_anonymous_args = 0
+ 184 0000 00B5     		push	{lr}
+ 185              		.cfi_def_cfa_offset 4
+ 186              		.cfi_offset 14, -4
+ 187 0002 85B0     		sub	sp, sp, #20
+ 188              		.cfi_def_cfa_offset 24
+ 189 0004 0190     		str	r0, [sp, #4]
+ 190 0006 8DED000A 		vstr.32	s0, [sp]
+  85:user_code/servo.c ****     servo_operation_state_enum return_state = SERVO_ERROR_UNKNOW;
+ 191              		.loc 1 85 32
+ 192 000a 0123     		movs	r3, #1
+ 193 000c 8DF80F30 		strb	r3, [sp, #15]
+  86:user_code/servo.c ****     uint32 servo_duty = 0;
+ 194              		.loc 1 86 12
+ 195 0010 0023     		movs	r3, #0
+ 196 0012 0293     		str	r3, [sp, #8]
+  87:user_code/servo.c ****     do
+  88:user_code/servo.c ****     {
+  89:user_code/servo.c ****       if(servo_angle < SERVO_MIN_ANGLE || servo_angle > SERVO_MAX_ANGLE)
+ 197              		.loc 1 89 9
+ 198 0014 DDED007A 		vldr.32	s15, [sp]
+ 199 0018 9FED237A 		vldr.32	s14, .L20
+ 200 001c F4EEC77A 		vcmpe.f32	s15, s14
+ 201 0020 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 202 0024 08D4     		bmi	.L12
+ 203              		.loc 1 89 40 discriminator 1
+ 204 0026 DDED007A 		vldr.32	s15, [sp]
+ 205 002a 9FED207A 		vldr.32	s14, .L20+4
+ 206 002e F4EEC77A 		vcmpe.f32	s15, s14
+ 207 0032 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 208 0036 07DD     		ble	.L19
+ 209              	.L12:
+  90:user_code/servo.c ****       {
+  91:user_code/servo.c ****           return_state = SERVO_ERROR_ANGLE_OUT_OF_RANGE;
+ 210              		.loc 1 91 24
+ 211 0038 0223     		movs	r3, #2
+ 212 003a 8DF80F30 		strb	r3, [sp, #15]
+  92:user_code/servo.c ****           zf_gpio_set_level(G14, GPIO_LOW);
+ 213              		.loc 1 92 11
+ 214 003e 0021     		movs	r1, #0
+ 215 0040 CE20     		movs	r0, #206
+ 216 0042 FFF7FEFF 		bl	zf_gpio_set_level
+  93:user_code/servo.c ****           break;
+ 217              		.loc 1 93 11
+ 218 0046 29E0     		b	.L15
+ 219              	.L19:
+  94:user_code/servo.c ****       }
+  95:user_code/servo.c ****       servo_duty = (servo_angle * 1000 / 180) +250;
+ 220              		.loc 1 95 33
+ 221 0048 DDED007A 		vldr.32	s15, [sp]
+ 222 004c 9FED187A 		vldr.32	s14, .L20+8
+ 223 0050 27EE877A 		vmul.f32	s14, s15, s14
+ 224              		.loc 1 95 40
+ 225 0054 DFED176A 		vldr.32	s13, .L20+12
+ 226 0058 C7EE267A 		vdiv.f32	s15, s14, s13
+ 227              		.loc 1 95 47
+ 228 005c 9FED167A 		vldr.32	s14, .L20+16
+ 229 0060 77EE877A 		vadd.f32	s15, s15, s14
+ 230              		.loc 1 95 18
+ 231 0064 FCEEE77A 		vcvt.u32.f32	s15, s15
+ 232 0068 17EE903A 		vmov	r3, s15	@ int
+ 233 006c 0293     		str	r3, [sp, #8]
+  96:user_code/servo.c ****       if(servo_duty < SERVO_MIN_PULSE || servo_duty > SERVO_MAX_PULSE)
+ 234              		.loc 1 96 9
+ 235 006e 029B     		ldr	r3, [sp, #8]
+ 236 0070 B3F51B7F 		cmp	r3, #620
+ 237 0074 03D3     		bcc	.L16
+ 238              		.loc 1 96 39 discriminator 1
+ 239 0076 029B     		ldr	r3, [sp, #8]
+ 240 0078 B3F5527F 		cmp	r3, #840
+ 241 007c 07D9     		bls	.L17
+ 242              	.L16:
+  97:user_code/servo.c ****       {
+  98:user_code/servo.c ****           return_state = SERVO_ERROR_PULSE_OUT_OF_RANGE;
+ 243              		.loc 1 98 24
+ 244 007e 0323     		movs	r3, #3
+ 245 0080 8DF80F30 		strb	r3, [sp, #15]
+  99:user_code/servo.c ****           zf_gpio_set_level(G14, GPIO_LOW);
+ 246              		.loc 1 99 11
+ 247 0084 0021     		movs	r1, #0
+ 248 0086 CE20     		movs	r0, #206
+ 249 0088 FFF7FEFF 		bl	zf_gpio_set_level
+ 100:user_code/servo.c ****           break;
+ 250              		.loc 1 100 11
+ 251 008c 06E0     		b	.L15
+ 252              	.L17:
+ 101:user_code/servo.c ****       }
+ 102:user_code/servo.c ****       zf_pwm_set_duty(pin, servo_duty);
+ 253              		.loc 1 102 7
+ 254 008e 0299     		ldr	r1, [sp, #8]
+ 255 0090 0198     		ldr	r0, [sp, #4]
+ 256 0092 FFF7FEFF 		bl	zf_pwm_set_duty
+ 103:user_code/servo.c **** 
+ 104:user_code/servo.c ****       return_state = SERVO_OK;
+ 257              		.loc 1 104 20
+ 258 0096 0023     		movs	r3, #0
+ 259 0098 8DF80F30 		strb	r3, [sp, #15]
+ 260              	.L15:
+ 105:user_code/servo.c ****     }while(0);
+ 106:user_code/servo.c **** 
+ 107:user_code/servo.c ****     return return_state;
+ 261              		.loc 1 107 12
+ 262 009c 9DF80F30 		ldrb	r3, [sp, #15]	@ zero_extendqisi2
+ 108:user_code/servo.c **** }
+ 263              		.loc 1 108 1
+ 264 00a0 1846     		mov	r0, r3
+ 265 00a2 05B0     		add	sp, sp, #20
+ 266              		.cfi_def_cfa_offset 4
+ 267              		@ sp needed
+ 268 00a4 5DF804FB 		ldr	pc, [sp], #4
+ 269              	.L21:
+ 270              		.align	2
+ 271              	.L20:
+ 272 00a8 00008742 		.word	1116143616
+ 273 00ac 6666D442 		.word	1121216102
+ 274 00b0 00007A44 		.word	1148846080
+ 275 00b4 00003443 		.word	1127481344
+ 276 00b8 00007A43 		.word	1132068864
+ 277              		.cfi_endproc
+ 278              	.LFE484:
+ 280              		.section	.text.dlw_servo_control,"ax",%progbits
+ 281              		.align	1
+ 282              		.p2align 4,,15
+ 283              		.global	dlw_servo_control
+ 284              		.syntax unified
+ 285              		.thumb
+ 286              		.thumb_func
+ 288              	dlw_servo_control:
+ 289              	.LFB485:
+ 109:user_code/servo.c **** 
+ 110:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+ 111:user_code/servo.c **** // 函数简介     舵机遥控器控制
+ 112:user_code/servo.c **** // 参数说明     channel_data           遥控器通道数据
+ 113:user_code/servo.c **** // 返回参数     void
+ 114:user_code/servo.c **** // 使用示例     dlw_moto_control(channel_ptr[1]);
+ 115:user_code/servo.c **** // 备注信息
+ 116:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+ 117:user_code/servo.c **** void dlw_servo_control(uint16 channel_data)
+ 118:user_code/servo.c **** {
+ 290              		.loc 1 118 1
+ 291              		.cfi_startproc
+ 292              		@ args = 0, pretend = 0, frame = 8
+ 293              		@ frame_needed = 0, uses_anonymous_args = 0
+ 294 0000 00B5     		push	{lr}
+ 295              		.cfi_def_cfa_offset 4
+ 296              		.cfi_offset 14, -4
+ 297 0002 83B0     		sub	sp, sp, #12
+ 298              		.cfi_def_cfa_offset 16
+ 299 0004 0346     		mov	r3, r0
+ 300 0006 ADF80630 		strh	r3, [sp, #6]	@ movhi
+ 119:user_code/servo.c ****     static uint32 srevo_duty = 0;
+ 120:user_code/servo.c ****     // 线性映射通道数据到PWM占空比
+ 121:user_code/servo.c ****     srevo_duty = ((channel_data - 200) * (SERVO_MAX_PULSE - SERVO_MIN_PULSE) / (1800 - 200)) + SERV
+ 301              		.loc 1 121 33
+ 302 000a BDF80630 		ldrh	r3, [sp, #6]
+ 303 000e C83B     		subs	r3, r3, #200
+ 304              		.loc 1 121 40
+ 305 0010 DC22     		movs	r2, #220
+ 306 0012 02FB03F3 		mul	r3, r2, r3
+ 307              		.loc 1 121 78
+ 308 0016 184A     		ldr	r2, .L26
+ 309 0018 82FB0312 		smull	r1, r2, r2, r3
+ 310 001c 5212     		asrs	r2, r2, #9
+ 311 001e DB17     		asrs	r3, r3, #31
+ 312 0020 D31A     		subs	r3, r2, r3
+ 313              		.loc 1 121 94
+ 314 0022 03F51B73 		add	r3, r3, #620
+ 315 0026 1A46     		mov	r2, r3
+ 316              		.loc 1 121 16
+ 317 0028 144B     		ldr	r3, .L26+4
+ 318 002a 1A60     		str	r2, [r3]
+ 122:user_code/servo.c **** 
+ 123:user_code/servo.c ****     if(!(uart_receiver.state))
+ 319              		.loc 1 123 23
+ 320 002c 144B     		ldr	r3, .L26+8
+ 321 002e 1B7B     		ldrb	r3, [r3, #12]	@ zero_extendqisi2
+ 322              		.loc 1 123 7
+ 323 0030 002B     		cmp	r3, #0
+ 324 0032 03D1     		bne	.L23
+ 124:user_code/servo.c ****     {
+ 125:user_code/servo.c ****         srevo_duty = SERVO_MED_PULSE;
+ 325              		.loc 1 125 20
+ 326 0034 114B     		ldr	r3, .L26+4
+ 327 0036 40F2EE22 		movw	r2, #750
+ 328 003a 1A60     		str	r2, [r3]
+ 329              	.L23:
+ 126:user_code/servo.c ****     }
+ 127:user_code/servo.c ****     // 确保占空比在有效范围内
+ 128:user_code/servo.c ****     if (srevo_duty < SERVO_MIN_PULSE)
+ 330              		.loc 1 128 20
+ 331 003c 0F4B     		ldr	r3, .L26+4
+ 332 003e 1B68     		ldr	r3, [r3]
+ 333              		.loc 1 128 8
+ 334 0040 B3F51B7F 		cmp	r3, #620
+ 335 0044 04D2     		bcs	.L24
+ 129:user_code/servo.c ****     {
+ 130:user_code/servo.c ****         srevo_duty = SERVO_MIN_PULSE;
+ 336              		.loc 1 130 20
+ 337 0046 0D4B     		ldr	r3, .L26+4
+ 338 0048 4FF41B72 		mov	r2, #620
+ 339 004c 1A60     		str	r2, [r3]
+ 340 004e 08E0     		b	.L25
+ 341              	.L24:
+ 131:user_code/servo.c ****     }
+ 132:user_code/servo.c ****     else if (srevo_duty > SERVO_MAX_PULSE)
+ 342              		.loc 1 132 25
+ 343 0050 0A4B     		ldr	r3, .L26+4
+ 344 0052 1B68     		ldr	r3, [r3]
+ 345              		.loc 1 132 13
+ 346 0054 B3F5527F 		cmp	r3, #840
+ 347 0058 03D9     		bls	.L25
+ 133:user_code/servo.c ****     {
+ 134:user_code/servo.c ****         srevo_duty = SERVO_MAX_PULSE;
+ 348              		.loc 1 134 20
+ 349 005a 084B     		ldr	r3, .L26+4
+ 350 005c 4FF45272 		mov	r2, #840
+ 351 0060 1A60     		str	r2, [r3]
+ 352              	.L25:
+ 135:user_code/servo.c ****     }
+ 136:user_code/servo.c ****     // 设置舵机PWM占空比
+ 137:user_code/servo.c ****     dlw_servo_set_duty(PWM_TIM8_CH1_I0, srevo_duty);
+ 353              		.loc 1 137 5
+ 354 0062 064B     		ldr	r3, .L26+4
+ 355 0064 1B68     		ldr	r3, [r3]
+ 356 0066 1946     		mov	r1, r3
+ 357 0068 0648     		ldr	r0, .L26+12
+ 358 006a FFF7FEFF 		bl	dlw_servo_set_duty
+ 138:user_code/servo.c **** }
+ 359              		.loc 1 138 1
+ 360 006e 00BF     		nop
+ 361 0070 03B0     		add	sp, sp, #12
+ 362              		.cfi_def_cfa_offset 4
+ 363              		@ sp needed
+ 364 0072 5DF804FB 		ldr	pc, [sp], #4
+ 365              	.L27:
+ 366 0076 00BF     		.align	2
+ 367              	.L26:
+ 368 0078 1F85EB51 		.word	1374389535
+ 369 007c 00000000 		.word	srevo_duty.0
+ 370 0080 00000000 		.word	uart_receiver
+ 371 0084 00410100 		.word	82176
+ 372              		.cfi_endproc
+ 373              	.LFE485:
+ 375              		.section	.rodata
+ 376              		.align	2
+ 377              	.LC0:
+ 378 0000 7069645F 		.ascii	"pid_output_angle:\000"
+ 378      6F757470 
+ 378      75745F61 
+ 378      6E676C65 
+ 378      3A00
+ 379              		.section	.text.dlw_servo_stabilize,"ax",%progbits
+ 380              		.align	1
+ 381              		.p2align 4,,15
+ 382              		.global	dlw_servo_stabilize
+ 383              		.syntax unified
+ 384              		.thumb
+ 385              		.thumb_func
+ 387              	dlw_servo_stabilize:
+ 388              	.LFB486:
+ 139:user_code/servo.c **** 
+ 140:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+ 141:user_code/servo.c **** // 函数简介     舵机PID控制
+ 142:user_code/servo.c **** // 参数说明     pid_output        PID输出值
+ 143:user_code/servo.c **** // 使用示例
+ 144:user_code/servo.c **** // 备注信息
+ 145:user_code/servo.c **** //-------------------------------------------------------------------------------------------------
+ 146:user_code/servo.c **** void dlw_servo_stabilize(float pid_output)
+ 147:user_code/servo.c **** {
+ 389              		.loc 1 147 1
+ 390              		.cfi_startproc
+ 391              		@ args = 0, pretend = 0, frame = 24
+ 392              		@ frame_needed = 0, uses_anonymous_args = 0
+ 393 0000 00B5     		push	{lr}
+ 394              		.cfi_def_cfa_offset 4
+ 395              		.cfi_offset 14, -4
+ 396 0002 89B0     		sub	sp, sp, #36
+ 397              		.cfi_def_cfa_offset 40
+ 398 0004 8DED030A 		vstr.32	s0, [sp, #12]
+ 148:user_code/servo.c ****     // 计算负向区间比例 (70.2° ~ 90°)
+ 149:user_code/servo.c ****     const float NEGATIVE_RANGE = SERVO_MED_ANGLE - SERVO_MIN_ANGLE; // 19.8°
+ 399              		.loc 1 149 17
+ 400 0008 304B     		ldr	r3, .L40
+ 401 000a 0693     		str	r3, [sp, #24]	@ float
+ 150:user_code/servo.c ****     // 计算正向区间比例 (90° ~ 106.2°)
+ 151:user_code/servo.c ****     const float POSITIVE_RANGE = SERVO_MAX_ANGLE - SERVO_MED_ANGLE; // 16.2°
+ 402              		.loc 1 151 17
+ 403 000c 304B     		ldr	r3, .L40+4
+ 404 000e 0593     		str	r3, [sp, #20]	@ float
+ 152:user_code/servo.c **** 
+ 153:user_code/servo.c ****     float angle;
+ 154:user_code/servo.c **** 
+ 155:user_code/servo.c ****     // 处理负向输出
+ 156:user_code/servo.c ****     if (pid_output < 0)
+ 405              		.loc 1 156 8
+ 406 0010 DDED037A 		vldr.32	s15, [sp, #12]
+ 407 0014 F5EEC07A 		vcmpe.f32	s15, #0
+ 408 0018 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 409 001c 10D5     		bpl	.L39
+ 157:user_code/servo.c ****     {
+ 158:user_code/servo.c ****        angle = SERVO_MED_ANGLE + pid_output * (NEGATIVE_RANGE / 100.0f);
+ 410              		.loc 1 158 63
+ 411 001e DDED067A 		vldr.32	s15, [sp, #24]
+ 412 0022 DFED2C6A 		vldr.32	s13, .L40+8
+ 413 0026 87EEA67A 		vdiv.f32	s14, s15, s13
+ 414              		.loc 1 158 45
+ 415 002a DDED037A 		vldr.32	s15, [sp, #12]
+ 416 002e 67EE277A 		vmul.f32	s15, s14, s15
+ 417              		.loc 1 158 14
+ 418 0032 9FED297A 		vldr.32	s14, .L40+12
+ 419 0036 77EE877A 		vadd.f32	s15, s15, s14
+ 420 003a CDED077A 		vstr.32	s15, [sp, #28]
+ 421 003e 0FE0     		b	.L31
+ 422              	.L39:
+ 159:user_code/servo.c ****     }
+ 160:user_code/servo.c ****     // 处理正向输出
+ 161:user_code/servo.c ****     else
+ 162:user_code/servo.c ****     {
+ 163:user_code/servo.c ****        angle = SERVO_MED_ANGLE + pid_output * (POSITIVE_RANGE / 100.0f);
+ 423              		.loc 1 163 63
+ 424 0040 DDED057A 		vldr.32	s15, [sp, #20]
+ 425 0044 DFED236A 		vldr.32	s13, .L40+8
+ 426 0048 87EEA67A 		vdiv.f32	s14, s15, s13
+ 427              		.loc 1 163 45
+ 428 004c DDED037A 		vldr.32	s15, [sp, #12]
+ 429 0050 67EE277A 		vmul.f32	s15, s14, s15
+ 430              		.loc 1 163 14
+ 431 0054 9FED207A 		vldr.32	s14, .L40+12
+ 432 0058 77EE877A 		vadd.f32	s15, s15, s14
+ 433 005c CDED077A 		vstr.32	s15, [sp, #28]
+ 434              	.L31:
+ 164:user_code/servo.c ****     }
+ 165:user_code/servo.c **** 
+ 166:user_code/servo.c ****     // 角度限幅
+ 167:user_code/servo.c ****     if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
+ 435              		.loc 1 167 8
+ 436 0060 DDED077A 		vldr.32	s15, [sp, #28]
+ 437 0064 9FED1D7A 		vldr.32	s14, .L40+16
+ 438 0068 F4EEC77A 		vcmpe.f32	s15, s14
+ 439 006c F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 440 0070 01DD     		ble	.L32
+ 441              		.loc 1 167 40 discriminator 1
+ 442 0072 1B4B     		ldr	r3, .L40+20
+ 443 0074 0793     		str	r3, [sp, #28]	@ float
+ 444              	.L32:
+ 168:user_code/servo.c ****     if (angle < SERVO_MIN_ANGLE) angle = SERVO_MIN_ANGLE;
+ 445              		.loc 1 168 8
+ 446 0076 DDED077A 		vldr.32	s15, [sp, #28]
+ 447 007a 9FED1A7A 		vldr.32	s14, .L40+24
+ 448 007e F4EEC77A 		vcmpe.f32	s15, s14
+ 449 0082 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 450 0086 01D5     		bpl	.L34
+ 451              		.loc 1 168 40 discriminator 1
+ 452 0088 174B     		ldr	r3, .L40+28
+ 453 008a 0793     		str	r3, [sp, #28]	@ float
+ 454              	.L34:
+ 169:user_code/servo.c **** 
+ 170:user_code/servo.c ****     // 设置舵机角度
+ 171:user_code/servo.c ****     dlw_servo_set_angle(PWM_TIM8_CH1_I0, angle);
+ 455              		.loc 1 171 5
+ 456 008c 9DED070A 		vldr.32	s0, [sp, #28]
+ 457 0090 1648     		ldr	r0, .L40+32
+ 458 0092 FFF7FEFF 		bl	dlw_servo_set_angle
+ 172:user_code/servo.c ****     ips200_show_string(0, 16*17, "pid_output_angle:");
+ 459              		.loc 1 172 5
+ 460 0096 164B     		ldr	r3, .L40+36
+ 461 0098 4FF48872 		mov	r2, #272
+ 462 009c 0021     		movs	r1, #0
+ 463 009e 1548     		ldr	r0, .L40+40
+ 464 00a0 FFF7FEFF 		bl	display_interface_show_string
+ 173:user_code/servo.c ****     ips200_show_float(50, 16*18, (angle), 3, 6);
+ 465              		.loc 1 173 5
+ 466 00a4 DDED077A 		vldr.32	s15, [sp, #28]
+ 467 00a8 B7EEE77A 		vcvt.f64.f32	d7, s15
+ 468 00ac 0623     		movs	r3, #6
+ 469 00ae 0093     		str	r3, [sp]
+ 470 00b0 0323     		movs	r3, #3
+ 471 00b2 B0EE470B 		vmov.f64	d0, d7
+ 472 00b6 4FF49072 		mov	r2, #288
+ 473 00ba 3221     		movs	r1, #50
+ 474 00bc 0D48     		ldr	r0, .L40+40
+ 475 00be FFF7FEFF 		bl	display_interface_show_float
+ 174:user_code/servo.c **** }
+ 476              		.loc 1 174 1
+ 477 00c2 00BF     		nop
+ 478 00c4 09B0     		add	sp, sp, #36
+ 479              		.cfi_def_cfa_offset 4
+ 480              		@ sp needed
+ 481 00c6 5DF804FB 		ldr	pc, [sp], #4
+ 482              	.L41:
+ 483 00ca 00BF     		.align	2
+ 484              	.L40:
+ 485 00cc 0000B441 		.word	1102315520
+ 486 00d0 98998141 		.word	1099012504
+ 487 00d4 0000C842 		.word	1120403456
+ 488 00d8 0000B442 		.word	1119092736
+ 489 00dc 6666D442 		.word	1121216102
+ 490 00e0 6666D442 		.word	1121216102
+ 491 00e4 00008742 		.word	1116143616
+ 492 00e8 00008742 		.word	1116143616
+ 493 00ec 00410100 		.word	82176
+ 494 00f0 00000000 		.word	.LC0
+ 495 00f4 00000000 		.word	display_interface_default_obj
+ 496              		.cfi_endproc
+ 497              	.LFE486:
+ 499              		.section	.bss.srevo_duty.0,"aw",%nobits
+ 500              		.align	2
+ 503              	srevo_duty.0:
+ 504 0000 00000000 		.space	4
+ 505              		.text
+ 506              	.Letext0:
+ 507              		.file 2 "libraries/zf_common/zf_common_typedef.h"
+ 508              		.file 3 "libraries/zf_driver/zf_driver_gpio.h"
+ 509              		.file 4 "libraries/zf_driver/zf_driver_pwm.h"
+ 510              		.file 5 "libraries/zf_driver/zf_driver_spi.h"
+ 511              		.file 6 "libraries/zf_device/zf_device_display_interface.h"
+ 512              		.file 7 "libraries/zf_device/zf_device_uart_receiver.h"
+ 513              		.file 8 "user_code/servo.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 servo.c
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:19     .text.dlw_servo_init:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:26     .text.dlw_servo_init:00000000 dlw_servo_init
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:120    .text.dlw_servo_set_duty:00000000 dlw_servo_set_duty
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:113    .text.dlw_servo_set_duty:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:171    .text.dlw_servo_set_angle:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:178    .text.dlw_servo_set_angle:00000000 dlw_servo_set_angle
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:272    .text.dlw_servo_set_angle:000000a8 $d
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:281    .text.dlw_servo_control:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:288    .text.dlw_servo_control:00000000 dlw_servo_control
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:368    .text.dlw_servo_control:00000078 $d
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:503    .bss.srevo_duty.0:00000000 srevo_duty.0
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:376    .rodata:00000000 $d
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:380    .text.dlw_servo_stabilize:00000000 $t
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:387    .text.dlw_servo_stabilize:00000000 dlw_servo_stabilize
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:485    .text.dlw_servo_stabilize:000000cc $d
+C:\Users\86155\AppData\Local\Temp\cc3cM8Jv.s:500    .bss.srevo_duty.0:00000000 $d
+                           .group:00000000 wm4.0.1ea29c7543256e0887205fa7f8c557c8
+                           .group:00000000 wm4._newlib_version.h.4.bfdf54b0af045d4a71376ae00f63a22c
+                           .group:00000000 wm4.newlib.h.18.1c9fedb6b3cd797cff253cc0fd593ef2
+                           .group:00000000 wm4.ieeefp.h.77.2bc94c1d1ed8b02df437510a04ac1e45
+                           .group:00000000 wm4.features.h.22.026edb2397769f4ae13f35900dbdb560
+                           .group:00000000 wm4.config.h.224.c701144a7b0518c6ee9b9b5465b79f81
+                           .group:00000000 wm4._ansi.h.31.de524f58584151836e90d8620a16f8e8
+                           .group:00000000 wm4.stdio.h.31.7c0e28c411445f3f9c5b11accf882760
+                           .group:00000000 wm4._default_types.h.6.959254cf5f09734ea7516c89e8bb21bd
+                           .group:00000000 wm4.stddef.h.181.c3f52a3b0f4c288bddb5dda1562858e2
+                           .group:00000000 wm4.cdefs.h.49.a54b2d5c07711bc7320a3fea9f12cb56
+                           .group:00000000 wm4.stddef.h.39.c161261b198ee3a963897077fd6fa59f
+                           .group:00000000 wm4.stdarg.h.34.3a23a216c0c293b3d2ea2e89281481e6
+                           .group:00000000 wm4._types.h.20.dd0d04dca3800a0d2a6129b87f3adbb2
+                           .group:00000000 wm4.stddef.h.155.3588ebfdd1e8c7ede80509bb9c3b8009
+                           .group:00000000 wm4._types.h.127.34941de1b2539d59d5cac00e0dd27a45
+                           .group:00000000 wm4.reent.h.17.e292bf8b0bec6c96e131a54347145a30
+                           .group:00000000 wm4.lock.h.2.1461d1fff82dffe8bfddc23307f6484f
+                           .group:00000000 wm4.reent.h.77.dcd6129ff07fe81bd5636db29abe53b2
+                           .group:00000000 wm4.types.h.40.8b6acba56cefbb11746718204edc8f5e
+                           .group:00000000 wm4._stdint.h.10.c24fa3af3bc1706662bb5593a907e841
+                           .group:00000000 wm4._endian.h.31.65a10590763c3dde1ac4a7f66d7d4891
+                           .group:00000000 wm4.endian.h.9.49f3a4695c1b61e8a0808de3c4a106cb
+                           .group:00000000 wm4._timeval.h.32.bec3221fa7a9bb0bdde696c9c57e47d2
+                           .group:00000000 wm4.timespec.h.41.d855182eb0e690443ab8651bcedca6e1
+                           .group:00000000 wm4.select.h.19.40cd3f2bfc456b193b790c2754690ebf
+                           .group:00000000 wm4.types.h.51.5571ec98f267d17d3c670b7a3ba33afa
+                           .group:00000000 wm4.sched.h.22.c60982713a5c428609783c78f9c78d95
+                           .group:00000000 wm4._pthreadtypes.h.36.fcee9961c35163dde6267ef772ad1972
+                           .group:00000000 wm4.stdio.h.2.4aa87247282eca6c8f36f9de33d8df1a
+                           .group:00000000 wm4.stdio.h.81.932d0c162786b883f622b8d05c120c78
+                           .group:00000000 wm4._intsup.h.10.48bafbb683905c4daa4565a85aeeb264
+                           .group:00000000 wm4.stdint.h.23.d53047a68f4a85177f80b422d52785ed
+                           .group:00000000 wm4.string.h.8.c4b8571ce60dff2817f43fec8b86aecd
+                           .group:00000000 wm4.stddef.h.155.ba788add86a0e365f264484f110c3c29
+                           .group:00000000 wm4.sr5e1xx.h.22.e5c808533cc52ed19fb0830cd7d98924
+                           .group:00000000 wm4.cmsis_version.h.32.0f826810625204eca22a19868bdc7586
+                           .group:00000000 wm4.core_cm7.h.66.8ab2de36917d6fcae18019067fda13e0
+                           .group:00000000 wm4.cmsis_gcc.h.26.498d0ad17a45fc9ef20fdc01caf02259
+                           .group:00000000 wm4.core_cm7.h.174.43edb295ecdaadad738f48ba6011ffad
+                           .group:00000000 wm4.mpu_armv7.h.32.83326921a797fa9d6f70449916b4b839
+                           .group:00000000 wm4.cachel1_armv7.h.32.abd77761a989e008b0c60891114a33c7
+                           .group:00000000 wm4.SR5E1_ADC.h.14.21608e6aff125ba995dd767d6d8dc311
+                           .group:00000000 wm4.SR5E1_CEM.h.14.01fe5742c8f1ae35b1f3af05932f702e
+                           .group:00000000 wm4.SR5E1_CMU.h.14.2617b38b159abe38028862394531e06d
+                           .group:00000000 wm4.SR5E1_COMP.h.14.4b6fdfe4f5f7fd9bedf3a99b98bdf4cd
+                           .group:00000000 wm4.SR5E1_CORDIC.h.14.354fbf7c9eaf6963d38eaa25cf28ffe8
+                           .group:00000000 wm4.SR5E1_CRC.h.14.c64d0f7767671ddb92e9ead0a1162100
+                           .group:00000000 wm4.SR5E1_DAC.h.14.8c26a0ff04b0cfeb55306cc3f22187b8
+                           .group:00000000 wm4.SR5E1_DBGMCU.h.14.427df893d53a8044654f017ba01c25ed
+                           .group:00000000 wm4.SR5E1_DMA.h.14.a7f9a92f844b40a86965798c2e64240b
+                           .group:00000000 wm4.SR5E1_DMAMUX.h.14.471b3b4dfd4d41515f1df49493698866
+                           .group:00000000 wm4.SR5E1_EXTI.h.14.a325ea3fe89cd84894660551c33241ea
+                           .group:00000000 wm4.SR5E1_FCCU.h.14.0ebf0f0f36e079d28613ad2c80e17e23
+                           .group:00000000 wm4.SR5E1_FDCAN.h.14.ac57101fad5dbc798bfb93f34c899de7
+                           .group:00000000 wm4.SR5E1_FLASH_REG_ITF.h.14.d23d1d44923f9b20b8c8fdb51d66aefd
+                           .group:00000000 wm4.SR5E1_GPIO.h.14.1c84071e130d7c64b62470ab0e18a1f1
+                           .group:00000000 wm4.SR5E1_HRTIM.h.24.03932387d2522e6bd5c772a4edaf2f5d
+                           .group:00000000 wm4.SR5E1_HSEM.h.14.cbe70eee519f01b16452c3f8c99d8df1
+                           .group:00000000 wm4.SR5E1_I2C.h.14.350ba3e0f4fd57828457efa80135c36c
+                           .group:00000000 wm4.SR5E1_IMA.h.14.62b7088985ab2b7ce9b030a02daa1f7d
+                           .group:00000000 wm4.SR5E1_IWDG.h.14.20b7c5f05cf7ae94464c360d7af3660d
+                           .group:00000000 wm4.SR5E1_MEMU.h.14.04bad7ae4c52ce334a4fc900aad2ae5b
+                           .group:00000000 wm4.SR5E1_NVM_CTRL.h.14.5f442617f0628d4f16258f211c614ef9
+                           .group:00000000 wm4.SR5E1_PLLDIG.h.14.bd87a8e6917eee17dae2f312c8e5fa53
+                           .group:00000000 wm4.SR5E1_PMC_DIG.h.14.54173b566c6656344766ec4ef46c9281
+                           .group:00000000 wm4.SR5E1_RCC.h.14.56734803c71534de286e793a53649740
+                           .group:00000000 wm4.SR5E1_RTC.h.14.47037cbc7d8175dbf2be1dc0bb955e3f
+                           .group:00000000 wm4.SR5E1_SD_ADC.h.14.552b97d0b8f3c1fd4df6d8964b2f1a80
+                           .group:00000000 wm4.SR5E1_SMPU.h.14.8ce5bb6d5d7c579cd725f492f46e9085
+                           .group:00000000 wm4.SR5E1_SPI.h.14.42d52112e540f85ade4d9135f8b87d72
+                           .group:00000000 wm4.SR5E1_SSCM.h.14.8e6a2ad0ce5fca422fc3d69939b6125b
+                           .group:00000000 wm4.SR5E1_SYSCFG.h.14.02b969490118ce4069914b5e94f7ca65
+                           .group:00000000 wm4.SR5E1_TDM.h.14.a40ed7928cad243a57fd233fccf01ad2
+                           .group:00000000 wm4.SR5E1_TIM.h.14.f17572f4c16f3f152b8164ad25c34f5b
+                           .group:00000000 wm4.SR5E1_UART.h.14.eec3ab82b02b3bdb3de500483675b83f
+                           .group:00000000 wm4.SR5E1_WWDG.h.14.59b45efc70e442cc6ef03702aad4ad88
+                           .group:00000000 wm4.stdbool.h.29.07dce69c3b78884144b7f7bd19483461
+                           .group:00000000 wm4.typedefs.h.36.07fe3956b4e751037cfee70edcd0b397
+                           .group:00000000 wm4.irq_numbers.h.38.6294b95aed1bf7b3a2cda0eed8ce8f57
+                           .group:00000000 wm4.regs.h.23.2ac145b4f57126d16daed5fbd86d99c6
+                           .group:00000000 wm4.stdarg.h.31.3fa7b8f6daaa31edd1696c08c77f2a73
+                           .group:00000000 wm4.stdlib.h.13.4ed386f5c1a80d71e72172885d946ef2
+                           .group:00000000 wm4.alloca.h.8.dfc0c703c47ec3e69746825b17d9e66d
+                           .group:00000000 wm4.stdlib.h.56.f4862cfbf4363a1db01842d5bdf72c18
+                           .group:00000000 wm4.zf_common_typedef.h.47.8c368673885c9d07221c267e15ab1069
+                           .group:00000000 wm4.zf_common_debug.h.33.6d362bbaa8a8ff23e6f5c0a30bf7361f
+                           .group:00000000 wm4.zf_common_fifo.h.33.e14e643902e26e4e65437b5b20e82793
+                           .group:00000000 wm4.zf_common_function.h.33.02bbfb055e8ee322bc4f8b14ea195da2
+                           .group:00000000 wm4.zf_common_memory.h.33.d43647290a4d62164ff2ec77cadb89d8
+                           .group:00000000 wm4.saradc.h.25.e5a70aef9ec4fddf35f2b7cc0c9cf1bc
+                           .group:00000000 wm4.gpio.h.25.d41a0c19fda8c2de42e666afb48ec15a
+                           .group:00000000 wm4.zf_driver_gpio.h.65.5a4d2084c62fed7c22fdca02e748c198
+                           .group:00000000 wm4.zf_driver_adc.h.64.349fb433626b42172b0e0fee038428ca
+                           .group:00000000 wm4.can.h.25.3cfccb6c630ada4f656cab597e231e58
+                           .group:00000000 wm4.dmamux.h.25.337aea179f6dbcc87c52aae26d38f76e
+                           .group:00000000 wm4.clock_cfg.h.24.0aed3cee9ecce947225a304181294191
+                           .group:00000000 wm4.clock.h.37.80236c5607fdd9eb9275e5111a4191c3
+                           .group:00000000 wm4.irq.h.37.78714f25754c8b09d1428599101f6cc7
+                           .group:00000000 wm4.dma.h.40.f77dd217a06ceba13a3cfdd4102a73c1
+                           .group:00000000 wm4.zf_driver_can.h.67.fd10d2fa867eb54a54d4b57027d73a60
+                           .group:00000000 wm4.tim.h.25.6e7ad96569e77a70a68b9b4cc59f54f2
+                           .group:00000000 wm4.zf_driver_timer.h.33.8df253b6990d9861816977209fb11e90
+                           .group:00000000 wm4.zf_driver_encoder.h.57.7e32999f25354fac086ca226b0c630d4
+                           .group:00000000 wm4.exti.h.25.21597c35d9630b0985ce88d2c41f4ea4
+                           .group:00000000 wm4.zf_driver_exti.h.59.1b02b8083e5295ef5baaf83905d59395
+                           .group:00000000 wm4.ssd_types.h.29.b861f4e6d39d333f931bfc05b964cb1c
+                           .group:00000000 wm4.ssd_C55.h.37.dad650468a97d71aff4dd65ca085590f
+                           .group:00000000 wm4.zf_driver_flash.h.59.db93fe574c35ea9e79030063fbb35a13
+                           .group:00000000 wm4.hrtim.h.25.1601aea9d4a0da1de8252dc444355251
+                           .group:00000000 wm4.zf_driver_hrtim.h.64.cd8d2bf3bf1c471ea59d9c61e4a721d7
+                           .group:00000000 wm4.zf_driver_interrupt.h.33.2c3660dcc36cb090bd75b8f180c14f27
+                           .group:00000000 wm4.zf_driver_pit.h.33.834ac720a62e09d5603a9557331e9049
+                           .group:00000000 wm4.zf_driver_pwm.h.33.7d80487064ca712231a453396685a551
+                           .group:00000000 wm4.zf_driver_rcc.h.33.4c228cf40a79e1b974b30d5a9a3a77a7
+                           .group:00000000 wm4.zf_driver_soft_iic.h.33.9067bd298084134f63c61c075f95fa2b
+                           .group:00000000 wm4.zf_driver_soft_spi.h.33.a938287c023905d97cafe56e4be63674
+                           .group:00000000 wm4.zf_driver_spi.h.62.950b1f52ed365034df2907601137b455
+                           .group:00000000 wm4.zf_driver_system.h.33.370922a9681b47d575d2c83d302a180b
+                           .group:00000000 wm4.zf_driver_uart.h.70.ffcf3694337ad0b4066179f1abd5d668
+                           .group:00000000 wm4.zf_device_imu_interface.h.40.344a2c93b973b58cee305ff406fc3e84
+                           .group:00000000 wm4.zf_device_imu660rb.h.37.b47c39afb47c89c2c82bd28e76457042
+                           .group:00000000 wm4.zf_device_imu963ra.h.37.e773f164af6f72dd1b0b6c1242bf99b4
+                           .group:00000000 wm4.zf_device_wireless_interface.h.40.da0a07f107014cb0888a26f281971a5b
+                           .group:00000000 wm4.zf_device_display_interface.h.79.d8df25e52245efbd97fd6415c8db0a72
+                           .group:00000000 wm4.zf_device_ips200.h.37.957fc5e8b291701a6f6b47207b045b77
+                           .group:00000000 wm4.math.h.13.b6595ad277a643a6127e1a4515a98f91
+                           .group:00000000 wm4.zf_device_gnss.h.66.39fe53860d2d190725612db126de8287
+                           .group:00000000 wm4.zf_device_key.h.45.b12f9096d8cc68f085b8fe9fe5b730db
+                           .group:00000000 wm4.zf_device_uart_receiver.h.43.9ac9496dcaa4780ef86d21fa439379b4
+                           .group:00000000 wm4.servo.h.15.78b21a8d22a24e2a7b7553d655134d65
+
+UNDEFINED SYMBOLS
+zf_pwm_module_init
+zf_pwm_channel_init
+zf_delay_ms
+zf_pwm_set_duty
+zf_gpio_set_level
+uart_receiver
+display_interface_show_string
+display_interface_show_float
+display_interface_default_obj
